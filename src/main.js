@@ -21,6 +21,7 @@ const mobileJump = document.querySelector('#mobileJump');
 const mobileFly = document.querySelector('#mobileFly');
 const mobileSprint = document.querySelector('#mobileSprint');
 const mobileDown = document.querySelector('#mobileDown');
+const mobileFullscreen = document.querySelector('#mobileFullscreen');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xa9c7d8);
@@ -190,8 +191,8 @@ document.addEventListener('pointerlockchange', () => {
 });
 document.addEventListener('mousemove', (event) => {
   if (document.pointerLockElement !== canvas) return;
-  camera.rotation.y -= event.movementX * 0.002;
-  camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x - event.movementY * 0.002, -Math.PI / 2, Math.PI / 2);
+  camera.rotation.y -= event.movementX * 0.00235;
+  camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x - event.movementY * 0.00235, -Math.PI / 2, Math.PI / 2);
 });
 document.addEventListener('keydown', (event) => {
   keys[event.code] = true;
@@ -258,8 +259,8 @@ let lastLookY = 0;
 lookArea.addEventListener('pointerdown', (event) => { lookPointer = event.pointerId; lastLookX = event.clientX; lastLookY = event.clientY; lookArea.setPointerCapture(event.pointerId); });
 lookArea.addEventListener('pointermove', (event) => {
   if (event.pointerId !== lookPointer) return;
-  camera.rotation.y -= (event.clientX - lastLookX) * 0.004;
-  camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x - (event.clientY - lastLookY) * 0.004, -Math.PI / 2, Math.PI / 2);
+  camera.rotation.y -= (event.clientX - lastLookX) * 0.0048;
+  camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x - (event.clientY - lastLookY) * 0.0048, -Math.PI / 2, Math.PI / 2);
   lastLookX = event.clientX; lastLookY = event.clientY;
 });
 lookArea.addEventListener('pointerup', () => { lookPointer = null; });
@@ -278,6 +279,20 @@ function bindHoldButton(button, code) {
 }
 bindHoldButton(mobileSprint, 'ControlLeft');
 bindHoldButton(mobileDown, 'ShiftLeft');
+
+mobileFullscreen.addEventListener('click', async () => {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+      if (screen.orientation?.lock) await screen.orientation.lock('landscape').catch(() => {});
+    } else await document.exitFullscreen();
+  } catch (error) {
+    console.warn('Полноэкранный режим недоступен:', error);
+  }
+});
+document.addEventListener('fullscreenchange', () => {
+  mobileFullscreen.textContent = document.fullscreenElement ? 'Выйти из полного экрана' : 'На весь экран';
+});
 
 function showError(message) {
   loading.classList.add('hidden');

@@ -27,6 +27,7 @@ button { font: inherit; }
 .mobile-button { min-height: 58px; padding: 7px; border: 1px solid rgba(255,255,255,.35); border-radius: 50%; color: white; background: rgba(20,27,31,.62); font-size: 12px; font-weight: 700; touch-action: none; }
 .mobile-button--small { min-height: 46px; margin: 6px; }
 .mobile-button--primary { background: rgba(66,183,126,.75); }
+.mobile-button--wide { grid-column: 1 / -1; min-height: 40px; border-radius: 999px; }
 .mobile-button.is-active { background: rgba(103,217,160,.9); color: #07120c; }
 @media (pointer: coarse), (max-width: 800px) {
   .mobile-controls:not(.hidden) { display: block; }

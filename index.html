@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <title>Прогулка по карте</title>
 </head>
@@ -26,6 +27,7 @@
     <div id="lookArea" class="look-area" aria-label="Обзор"></div>
     <div id="joystick" class="joystick" aria-label="Движение"><div id="joystickKnob" class="joystick__knob"></div></div>
     <div class="mobile-actions">
+      <button id="mobileFullscreen" class="mobile-button mobile-button--wide" type="button">На весь экран</button>
       <button id="mobileSprint" class="mobile-button mobile-button--small" type="button">Бег</button>
       <button id="mobileDown" class="mobile-button mobile-button--small" type="button">Вниз</button>
       <button id="mobileFly" class="mobile-button" type="button">Полёт</button>

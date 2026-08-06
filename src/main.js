@@ -63,7 +63,8 @@ const draco = new DRACOLoader();
 draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
 
-loader.load('/Карта-web-meshopt.glb', (gltf) => {
+loadSplitModel(['/map.glb.part1', '/map.glb.part2']).then((arrayBuffer) => {
+  loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
   model.updateMatrixWorld(true);
   model.traverse((object) => {
@@ -86,12 +87,39 @@ loader.load('/Карта-web-meshopt.glb', (gltf) => {
   loading.classList.add('hidden');
   start.classList.remove('hidden');
   if (isTouchDevice) modeLabel.classList.remove('hidden');
-}, (event) => {
-  if (!event.total) return;
-  const value = Math.min(100, Math.round(event.loaded / event.total * 100));
-  progress.style.width = `${value}%`;
-  loadingText.textContent = `${value}%`;
-}, (error) => showError(`Не удалось открыть Карта-web-meshopt.glb\n${error.message || error}`));
+  }, (error) => showError(`Не удалось разобрать карту\n${error.message || error}`));
+}).catch((error) => showError(`Не удалось загрузить карту\n${error.message || error}`));
+
+async function loadSplitModel(urls) {
+  const loaded = new Array(urls.length).fill(0);
+  const totals = new Array(urls.length).fill(0);
+  const parts = await Promise.all(urls.map((url, index) => new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open('GET', url, true);
+    request.responseType = 'arraybuffer';
+    request.onprogress = (event) => {
+      loaded[index] = event.loaded;
+      totals[index] = event.lengthComputable ? event.total : totals[index];
+      const total = totals.reduce((sum, value) => sum + value, 0);
+      const current = loaded.reduce((sum, value) => sum + value, 0);
+      if (total > 0) {
+        const value = Math.min(100, Math.round(current / total * 100));
+        progress.style.width = `${value}%`;
+        loadingText.textContent = `${value}%`;
+      }
+    };
+    request.onload = () => request.status >= 200 && request.status < 300
+      ? resolve(new Uint8Array(request.response))
+      : reject(new Error(`${url}: HTTP ${request.status}`));
+    request.onerror = () => reject(new Error(`${url}: ошибка сети`));
+    request.send();
+  })));
+  const size = parts.reduce((sum, part) => sum + part.byteLength, 0);
+  const combined = new Uint8Array(size);
+  let offset = 0;
+  for (const part of parts) { combined.set(part, offset); offset += part.byteLength; }
+  return combined.buffer;
+}
 
 function resetToEntrance() {
   velocity.set(0, 0, 0);

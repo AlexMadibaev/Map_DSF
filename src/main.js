@@ -22,6 +22,7 @@ const lookArea = document.querySelector('#lookArea');
 const mobileJump = document.querySelector('#mobileJump');
 const mobileFly = document.querySelector('#mobileFly');
 const mobileSprint = document.querySelector('#mobileSprint');
+const mobileCrouch = document.querySelector('#mobileCrouch');
 const mobileDown = document.querySelector('#mobileDown');
 const mobileFullscreen = document.querySelector('#mobileFullscreen');
 
@@ -184,7 +185,8 @@ function updatePlayer(delta) {
   velocity.addScaledVector(velocity, Math.exp(-4 * delta) - 1);
   if (document.pointerLockElement === canvas || (isTouchDevice && !mobileControls.classList.contains('hidden'))) {
     const sprinting = keys.ShiftLeft || keys.ShiftRight;
-    const speedMultiplier = sprinting ? sprintMultiplier : (flightMode ? flightMultiplier : 1);
+    const crouching = !flightMode && (keys.KeyC || keys.ControlLeft || keys.ControlRight);
+    const speedMultiplier = crouching ? 0.45 : (sprinting ? sprintMultiplier : (flightMode ? flightMultiplier : 1));
     const acceleration = moveSpeed * speedMultiplier * delta;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     forward.y = 0;
@@ -216,6 +218,7 @@ function updatePlayer(delta) {
       playerCollisions();
     }
     camera.position.copy(playerCollider.end);
+    if (keys.KeyC || keys.ControlLeft || keys.ControlRight) camera.position.y -= 0.65;
   }
   if (bounds && camera.position.y < bounds.min.y - 1000) resetToEntrance();
 }
@@ -283,7 +286,7 @@ window.addEventListener('resize', () => {
 function updateModeLabel() {
   modeLabel.textContent = flightMode
     ? 'Полёт · Space вверх · Ctrl вниз · Shift ускорение · двойной Space/F — ходьба'
-    : 'Ходьба · Space прыжок · Shift ускорение · двойной Space/F — полёт';
+    : 'Ходьба · C/Ctrl сесть · Space прыжок · Shift ускорение · двойной Space/F — полёт';
 }
 
 function toggleFlight() {
@@ -351,6 +354,7 @@ function bindHoldButton(button, code) {
   button.addEventListener('pointerleave', release);
 }
 bindHoldButton(mobileSprint, 'ShiftLeft');
+bindHoldButton(mobileCrouch, 'KeyC');
 bindHoldButton(mobileDown, 'ControlLeft');
 
 mobileFullscreen.addEventListener('click', async () => {

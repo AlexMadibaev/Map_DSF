@@ -155,7 +155,7 @@ function updatePlayer(delta) {
   if (!ready) return;
   velocity.addScaledVector(velocity, Math.exp(-4 * delta) - 1);
   if (document.pointerLockElement === canvas || (isTouchDevice && !mobileControls.classList.contains('hidden'))) {
-    const sprinting = keys.ControlLeft || keys.ControlRight;
+    const sprinting = keys.ShiftLeft || keys.ShiftRight;
     const speedMultiplier = sprinting ? sprintMultiplier : (flightMode ? flightMultiplier : 1);
     const acceleration = moveSpeed * speedMultiplier * delta;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
@@ -171,7 +171,7 @@ function updatePlayer(delta) {
     velocity.addScaledVector(forward, -mobileMove.y * acceleration);
     velocity.addScaledVector(right, mobileMove.x * acceleration);
     if (flightMode && keys.Space) velocity.y += acceleration;
-    if (flightMode && (keys.ShiftLeft || keys.ShiftRight)) velocity.y -= acceleration;
+    if (flightMode && (keys.ControlLeft || keys.ControlRight)) velocity.y -= acceleration;
   }
   camera.position.addScaledVector(velocity, delta);
   if (!flightMode) {
@@ -234,8 +234,8 @@ window.addEventListener('resize', () => {
 
 function updateModeLabel() {
   modeLabel.textContent = flightMode
-    ? 'Полёт · Space вверх · Shift вниз · двойной Space/F — ходьба'
-    : 'Ходьба · Space прыжок · Ctrl бег · двойной Space/F — полёт';
+    ? 'Полёт · Space вверх · Ctrl вниз · Shift ускорение · двойной Space/F — ходьба'
+    : 'Ходьба · Space прыжок · Shift ускорение · двойной Space/F — полёт';
 }
 
 function toggleFlight() {
@@ -298,8 +298,8 @@ function bindHoldButton(button, code) {
   button.addEventListener('pointercancel', release);
   button.addEventListener('pointerleave', release);
 }
-bindHoldButton(mobileSprint, 'ControlLeft');
-bindHoldButton(mobileDown, 'ShiftLeft');
+bindHoldButton(mobileSprint, 'ShiftLeft');
+bindHoldButton(mobileDown, 'ControlLeft');
 
 mobileFullscreen.addEventListener('click', async () => {
   try {

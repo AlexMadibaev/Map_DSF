@@ -53,6 +53,7 @@ let moveSpeed = 12;
 let lastSpacePress = 0;
 let verticalSpeed = 0;
 const sprintMultiplier = 4.5;
+const flightMultiplier = 2.5;
 
 // Blender: X=116.24, Y=-78.65, Z=7.7027.
 // GLB/Three.js меняет оси: (X, Y, Z) -> (X, Z, -Y).
@@ -136,7 +137,8 @@ function updatePlayer(delta) {
   velocity.addScaledVector(velocity, Math.exp(-4 * delta) - 1);
   if (document.pointerLockElement === canvas || (isTouchDevice && !mobileControls.classList.contains('hidden'))) {
     const sprinting = keys.ControlLeft || keys.ControlRight;
-    const acceleration = moveSpeed * (sprinting ? sprintMultiplier : 1) * delta;
+    const speedMultiplier = sprinting ? sprintMultiplier : (flightMode ? flightMultiplier : 1);
+    const acceleration = moveSpeed * speedMultiplier * delta;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     forward.y = 0;
     forward.normalize();

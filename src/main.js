@@ -66,8 +66,8 @@ draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
 
 const prefersLiteModel = isTouchDevice || (navigator.deviceMemory && navigator.deviceMemory <= 4);
-const qualityModelUrls = ['/map.glb.part1?v=1', '/map.glb.part2?v=1'];
-const liteModelUrls = ['/map-lite.glb?v=1'];
+const qualityModelUrls = ['/map-quality.glb?v=2'];
+const liteModelUrls = ['/map-lite.glb?v=2'];
 if (prefersLiteModel) loadingText.textContent = 'Загрузка мобильной версии…';
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.

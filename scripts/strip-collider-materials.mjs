@@ -9,13 +9,18 @@ const io = new NodeIO()
     'draco3d.encoder': await draco3d.createEncoderModule(),
   });
 
-const document = await io.read('collision-temp2.glb');
+const document = await io.read('Тест+.glb');
 const root = document.getRoot();
 
 for (const mesh of root.listMeshes()) {
-  for (const primitive of mesh.listPrimitives()) primitive.setMaterial(null);
+  for (const primitive of mesh.listPrimitives()) {
+    primitive.setMaterial(null);
+    for (const semantic of primitive.listSemantics()) {
+      if (semantic !== 'POSITION') primitive.setAttribute(semantic, null);
+    }
+  }
 }
 for (const material of root.listMaterials()) material.dispose();
 for (const texture of root.listTextures()) texture.dispose();
 
-await io.write('collision-geometry.glb', document);
+await io.write('collision-bare.glb', document);

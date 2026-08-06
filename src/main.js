@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'meshoptimizer';
+import { Octree } from 'three/addons/math/Octree.js';
+import { Capsule } from 'three/addons/math/Capsule.js';
 import './style.css';
 
 const canvas = document.querySelector('#scene');
@@ -42,6 +44,8 @@ sun.position.set(1, 2, 1);
 scene.add(sun);
 
 const velocity = new THREE.Vector3();
+const worldOctree = new Octree();
+const playerCollider = new Capsule(new THREE.Vector3(), new THREE.Vector3(), 0.35);
 const keys = Object.create(null);
 const clock = new THREE.Clock();
 const mobileMove = new THREE.Vector2();
@@ -52,6 +56,8 @@ let flightMode = false;
 let moveSpeed = 12;
 let lastSpacePress = 0;
 let verticalSpeed = 0;
+let onFloor = false;
+let physicsReady = false;
 const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
 
@@ -91,10 +97,7 @@ loadModelWithFallback().then((arrayBuffer) => {
   scene.fog.density = 0.65 / Math.max(maxSize, 500);
   moveSpeed = THREE.MathUtils.clamp(maxSize * 0.025, 8, 250);
   resetToEntrance();
-  ready = true;
-  loading.classList.add('hidden');
-  start.classList.remove('hidden');
-  if (isTouchDevice) modeLabel.classList.remove('hidden');
+  loadCollisionWorld();
   }, (error) => showError(`Не удалось разобрать карту\n${error.message || error}`));
 }).catch((error) => showError(`Не удалось загрузить карту\n${error.message || error}`));
 
@@ -142,10 +145,35 @@ async function loadSplitModel(urls) {
   return combined.buffer;
 }
 
+function loadCollisionWorld() {
+  loading.classList.remove('hidden');
+  loadingText.textContent = 'Подготовка физики…';
+  progress.style.width = '100%';
+  loader.load('/collision.glb?v=1', (gltf) => {
+    gltf.scene.updateMatrixWorld(true);
+    setTimeout(() => {
+      worldOctree.fromGraphNode(gltf.scene);
+      physicsReady = true;
+      ready = true;
+      resetToEntrance();
+      loading.classList.add('hidden');
+      start.classList.remove('hidden');
+      if (isTouchDevice) modeLabel.classList.remove('hidden');
+    }, 30);
+  }, undefined, (error) => showError(`Не удалось подготовить физику\n${error.message || error}`));
+}
+
+function syncColliderToCamera() {
+  playerCollider.start.copy(camera.position).add(new THREE.Vector3(0, -1.3, 0));
+  playerCollider.end.copy(camera.position);
+}
+
 function resetToEntrance() {
   velocity.set(0, 0, 0);
   verticalSpeed = 0;
   camera.position.copy(entrance);
+  syncColliderToCamera();
+  onFloor = false;
   camera.rotation.set(entrancePitch, entranceYaw, 0);
   flightMode = false;
   updateModeLabel();
@@ -173,19 +201,39 @@ function updatePlayer(delta) {
     if (flightMode && keys.Space) velocity.y += acceleration;
     if (flightMode && (keys.ControlLeft || keys.ControlRight)) velocity.y -= acceleration;
   }
-  camera.position.addScaledVector(velocity, delta);
-  if (!flightMode) {
-    verticalSpeed -= moveSpeed * 1.8 * delta;
-    camera.position.y += verticalSpeed * delta;
-    if (camera.position.y <= entrance.y) {
-      camera.position.y = entrance.y;
-      verticalSpeed = 0;
-    }
-    velocity.y = 0;
-  } else {
+  if (flightMode) {
+    camera.position.addScaledVector(velocity, delta);
     verticalSpeed = 0;
+    syncColliderToCamera();
+  } else if (physicsReady) {
+    verticalSpeed -= 24 * delta;
+    const movement = new THREE.Vector3(velocity.x, verticalSpeed, velocity.z).multiplyScalar(delta);
+    const steps = THREE.MathUtils.clamp(Math.ceil(movement.length() / 0.3), 1, 20);
+    movement.multiplyScalar(1 / steps);
+    onFloor = false;
+    for (let i = 0; i < steps; i += 1) {
+      playerCollider.translate(movement);
+      playerCollisions();
+    }
+    camera.position.copy(playerCollider.end);
   }
   if (bounds && camera.position.y < bounds.min.y - 1000) resetToEntrance();
+}
+
+function playerCollisions() {
+  const result = worldOctree.capsuleIntersect(playerCollider);
+  if (!result) return;
+  if (result.normal.y > 0.35) onFloor = true;
+  const speed = new THREE.Vector3(velocity.x, verticalSpeed, velocity.z);
+  const intoSurface = speed.dot(result.normal);
+  if (intoSurface < 0) {
+    speed.addScaledVector(result.normal, -intoSurface);
+    velocity.x = speed.x;
+    velocity.z = speed.z;
+    verticalSpeed = speed.y;
+  }
+  if (onFloor && verticalSpeed < 0) verticalSpeed = 0;
+  playerCollider.translate(result.normal.multiplyScalar(result.depth));
 }
 
 function animate() {
@@ -242,6 +290,7 @@ function toggleFlight() {
   flightMode = !flightMode;
   velocity.y = 0;
   verticalSpeed = 0;
+  syncColliderToCamera();
   mobileFly.classList.toggle('is-active', flightMode);
   updateModeLabel();
 }
@@ -253,7 +302,10 @@ function handleJumpPress() {
     lastSpacePress = 0;
   } else {
     lastSpacePress = now;
-    if (!flightMode && camera.position.y <= entrance.y + 0.01) verticalSpeed = moveSpeed * 0.62;
+    if (!flightMode && onFloor) {
+      verticalSpeed = 8.5;
+      onFloor = false;
+    }
   }
 }
 

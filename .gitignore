@@ -6,3 +6,4 @@ dist/
 *.glb
 !public/map-lite.glb
 !public/map-quality.glb
+!public/collision.glb

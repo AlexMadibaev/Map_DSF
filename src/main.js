@@ -1,0 +1,258 @@
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'meshoptimizer';
+import './style.css';
+
+const canvas = document.querySelector('#scene');
+const loading = document.querySelector('#loading');
+const progress = document.querySelector('#progress');
+const loadingText = document.querySelector('#loadingText');
+const start = document.querySelector('#start');
+const startButton = document.querySelector('#startButton');
+const hint = document.querySelector('#hint');
+const modeLabel = document.querySelector('#mode');
+const errorBox = document.querySelector('#error');
+const mobileControls = document.querySelector('#mobileControls');
+const joystick = document.querySelector('#joystick');
+const joystickKnob = document.querySelector('#joystickKnob');
+const lookArea = document.querySelector('#lookArea');
+const mobileJump = document.querySelector('#mobileJump');
+const mobileFly = document.querySelector('#mobileFly');
+const mobileSprint = document.querySelector('#mobileSprint');
+const mobileDown = document.querySelector('#mobileDown');
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xa9c7d8);
+scene.fog = new THREE.FogExp2(0xa9c7d8, 0.00018);
+
+const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 100000);
+camera.rotation.order = 'YXZ';
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+
+scene.add(new THREE.HemisphereLight(0xd9efff, 0x59624b, 2.2));
+const sun = new THREE.DirectionalLight(0xfff2d6, 2.4);
+sun.position.set(1, 2, 1);
+scene.add(sun);
+
+const velocity = new THREE.Vector3();
+const keys = Object.create(null);
+const clock = new THREE.Clock();
+const mobileMove = new THREE.Vector2();
+const isTouchDevice = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+let bounds;
+let ready = false;
+let flightMode = false;
+let moveSpeed = 12;
+let lastSpacePress = 0;
+let verticalSpeed = 0;
+const sprintMultiplier = 4.5;
+
+// Blender: X=116.24, Y=-78.65, Z=7.7027.
+// GLB/Three.js меняет оси: (X, Y, Z) -> (X, Z, -Y).
+const entrance = new THREE.Vector3(116.24, 7.7027, 78.65);
+const entrancePitch = THREE.MathUtils.degToRad(97.85 - 90);
+const entranceYaw = THREE.MathUtils.degToRad(-21.2);
+
+const draco = new DRACOLoader();
+draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
+
+loader.load('/Карта-web-meshopt.glb', (gltf) => {
+  const model = gltf.scene;
+  model.updateMatrixWorld(true);
+  model.traverse((object) => {
+    if (!object.isMesh) return;
+    object.castShadow = false;
+    object.receiveShadow = false;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach((material) => { if (material) material.side = THREE.DoubleSide; });
+  });
+  scene.add(model);
+  bounds = new THREE.Box3().setFromObject(model);
+  const size = bounds.getSize(new THREE.Vector3());
+  const maxSize = Math.max(size.x, size.y, size.z, 1);
+  camera.far = Math.max(2000, maxSize * 4);
+  camera.updateProjectionMatrix();
+  scene.fog.density = 0.65 / Math.max(maxSize, 500);
+  moveSpeed = THREE.MathUtils.clamp(maxSize * 0.025, 8, 250);
+  resetToEntrance();
+  ready = true;
+  loading.classList.add('hidden');
+  start.classList.remove('hidden');
+  if (isTouchDevice) modeLabel.classList.remove('hidden');
+}, (event) => {
+  if (!event.total) return;
+  const value = Math.min(100, Math.round(event.loaded / event.total * 100));
+  progress.style.width = `${value}%`;
+  loadingText.textContent = `${value}%`;
+}, (error) => showError(`Не удалось открыть Карта-web-meshopt.glb\n${error.message || error}`));
+
+function resetToEntrance() {
+  velocity.set(0, 0, 0);
+  verticalSpeed = 0;
+  camera.position.copy(entrance);
+  camera.rotation.set(entrancePitch, entranceYaw, 0);
+  flightMode = false;
+  updateModeLabel();
+}
+
+function updatePlayer(delta) {
+  if (!ready) return;
+  velocity.addScaledVector(velocity, Math.exp(-4 * delta) - 1);
+  if (document.pointerLockElement === canvas || (isTouchDevice && !mobileControls.classList.contains('hidden'))) {
+    const sprinting = keys.ControlLeft || keys.ControlRight;
+    const acceleration = moveSpeed * (sprinting ? sprintMultiplier : 1) * delta;
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    forward.y = 0;
+    forward.normalize();
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    right.y = 0;
+    right.normalize();
+    if (keys.KeyW || keys.ArrowUp) velocity.addScaledVector(forward, acceleration);
+    if (keys.KeyS || keys.ArrowDown) velocity.addScaledVector(forward, -acceleration);
+    if (keys.KeyA || keys.ArrowLeft) velocity.addScaledVector(right, -acceleration);
+    if (keys.KeyD || keys.ArrowRight) velocity.addScaledVector(right, acceleration);
+    velocity.addScaledVector(forward, -mobileMove.y * acceleration);
+    velocity.addScaledVector(right, mobileMove.x * acceleration);
+    if (flightMode && keys.Space) velocity.y += acceleration;
+    if (flightMode && (keys.ShiftLeft || keys.ShiftRight)) velocity.y -= acceleration;
+  }
+  camera.position.addScaledVector(velocity, delta);
+  if (!flightMode) {
+    verticalSpeed -= moveSpeed * 1.8 * delta;
+    camera.position.y += verticalSpeed * delta;
+    if (camera.position.y <= entrance.y) {
+      camera.position.y = entrance.y;
+      verticalSpeed = 0;
+    }
+    velocity.y = 0;
+  } else {
+    verticalSpeed = 0;
+  }
+  if (bounds && camera.position.y < bounds.min.y - 1000) resetToEntrance();
+}
+
+function animate() {
+  updatePlayer(Math.min(0.05, clock.getDelta()));
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+animate();
+
+function beginExperience() {
+  start.classList.add('hidden');
+  if (isTouchDevice) {
+    mobileControls.classList.remove('hidden');
+    modeLabel.classList.remove('hidden');
+  } else canvas.requestPointerLock();
+}
+startButton.addEventListener('click', beginExperience);
+canvas.addEventListener('click', () => { if (ready && !isTouchDevice && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
+document.addEventListener('pointerlockchange', () => {
+  const locked = document.pointerLockElement === canvas;
+  if (locked) start.classList.add('hidden');
+  hint.classList.toggle('hidden', locked || !ready);
+  modeLabel.classList.toggle('hidden', !ready);
+});
+document.addEventListener('mousemove', (event) => {
+  if (document.pointerLockElement !== canvas) return;
+  camera.rotation.y -= event.movementX * 0.002;
+  camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x - event.movementY * 0.002, -Math.PI / 2, Math.PI / 2);
+});
+document.addEventListener('keydown', (event) => {
+  keys[event.code] = true;
+  if (event.code === 'KeyR' && ready) resetToEntrance();
+  if (event.code === 'KeyF' && ready && !event.repeat) {
+    toggleFlight();
+  }
+  if (event.code === 'Space' && ready && !event.repeat) handleJumpPress();
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
+});
+document.addEventListener('keyup', (event) => { keys[event.code] = false; });
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+});
+
+function updateModeLabel() {
+  modeLabel.textContent = flightMode
+    ? 'Полёт · Space вверх · Shift вниз · двойной Space/F — ходьба'
+    : 'Ходьба · Space прыжок · Ctrl бег · двойной Space/F — полёт';
+}
+
+function toggleFlight() {
+  flightMode = !flightMode;
+  velocity.y = 0;
+  verticalSpeed = 0;
+  mobileFly.classList.toggle('is-active', flightMode);
+  updateModeLabel();
+}
+
+function handleJumpPress() {
+  const now = performance.now();
+  if (now - lastSpacePress < 320) {
+    toggleFlight();
+    lastSpacePress = 0;
+  } else {
+    lastSpacePress = now;
+    if (!flightMode && camera.position.y <= entrance.y + 0.01) verticalSpeed = moveSpeed * 0.62;
+  }
+}
+
+let joystickPointer = null;
+function updateJoystick(event) {
+  const rect = joystick.getBoundingClientRect();
+  const radius = rect.width * 0.34;
+  let x = event.clientX - (rect.left + rect.width / 2);
+  let y = event.clientY - (rect.top + rect.height / 2);
+  const length = Math.hypot(x, y);
+  if (length > radius) { x *= radius / length; y *= radius / length; }
+  mobileMove.set(x / radius, y / radius);
+  joystickKnob.style.transform = `translate(${x}px, ${y}px)`;
+}
+joystick.addEventListener('pointerdown', (event) => { joystickPointer = event.pointerId; joystick.setPointerCapture(event.pointerId); updateJoystick(event); });
+joystick.addEventListener('pointermove', (event) => { if (event.pointerId === joystickPointer) updateJoystick(event); });
+function releaseJoystick(event) { if (event.pointerId !== joystickPointer) return; joystickPointer = null; mobileMove.set(0, 0); joystickKnob.style.transform = ''; }
+joystick.addEventListener('pointerup', releaseJoystick);
+joystick.addEventListener('pointercancel', releaseJoystick);
+
+let lookPointer = null;
+let lastLookX = 0;
+let lastLookY = 0;
+lookArea.addEventListener('pointerdown', (event) => { lookPointer = event.pointerId; lastLookX = event.clientX; lastLookY = event.clientY; lookArea.setPointerCapture(event.pointerId); });
+lookArea.addEventListener('pointermove', (event) => {
+  if (event.pointerId !== lookPointer) return;
+  camera.rotation.y -= (event.clientX - lastLookX) * 0.004;
+  camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x - (event.clientY - lastLookY) * 0.004, -Math.PI / 2, Math.PI / 2);
+  lastLookX = event.clientX; lastLookY = event.clientY;
+});
+lookArea.addEventListener('pointerup', () => { lookPointer = null; });
+lookArea.addEventListener('pointercancel', () => { lookPointer = null; });
+
+mobileJump.addEventListener('pointerdown', (event) => { event.preventDefault(); keys.Space = true; handleJumpPress(); });
+mobileJump.addEventListener('pointerup', () => { keys.Space = false; });
+mobileJump.addEventListener('pointercancel', () => { keys.Space = false; });
+mobileFly.addEventListener('click', toggleFlight);
+function bindHoldButton(button, code) {
+  button.addEventListener('pointerdown', (event) => { event.preventDefault(); keys[code] = true; button.classList.add('is-active'); });
+  const release = () => { keys[code] = false; button.classList.remove('is-active'); };
+  button.addEventListener('pointerup', release);
+  button.addEventListener('pointercancel', release);
+  button.addEventListener('pointerleave', release);
+}
+bindHoldButton(mobileSprint, 'ControlLeft');
+bindHoldButton(mobileDown, 'ShiftLeft');
+
+function showError(message) {
+  loading.classList.add('hidden');
+  errorBox.textContent = message;
+  errorBox.classList.remove('hidden');
+}

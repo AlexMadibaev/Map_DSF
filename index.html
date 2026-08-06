@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Прогулка по карте</title>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <div id="loading" class="loading">
+    <div class="loading__title">Загрузка карты</div>
+    <div class="loading__track"><div id="progress" class="loading__bar"></div></div>
+    <div id="loadingText" class="loading__text">Подготовка…</div>
+  </div>
+  <div id="start" class="start hidden">
+    <h1>Карта готова</h1>
+    <p>Вы находитесь у входа</p>
+    <button id="startButton" type="button">Начать</button>
+    <div class="controls"><span>WASD — движение</span><span>Мышь — обзор</span><span>Пробел — прыжок</span><span>Двойной пробел / F — полёт</span><span>Ctrl — бег</span><span>Shift — вниз в полёте</span><span>R — ко входу</span></div>
+  </div>
+  <div id="hint" class="hint hidden">Нажмите, чтобы продолжить</div>
+  <div id="mode" class="mode hidden">Режим: ходьба · F — полёт</div>
+  <div class="crosshair"></div>
+  <div id="mobileControls" class="mobile-controls hidden">
+    <div id="lookArea" class="look-area" aria-label="Обзор"></div>
+    <div id="joystick" class="joystick" aria-label="Движение"><div id="joystickKnob" class="joystick__knob"></div></div>
+    <div class="mobile-actions">
+      <button id="mobileSprint" class="mobile-button mobile-button--small" type="button">Бег</button>
+      <button id="mobileDown" class="mobile-button mobile-button--small" type="button">Вниз</button>
+      <button id="mobileFly" class="mobile-button" type="button">Полёт</button>
+      <button id="mobileJump" class="mobile-button mobile-button--primary" type="button">Прыжок</button>
+    </div>
+  </div>
+  <div id="error" class="error hidden"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

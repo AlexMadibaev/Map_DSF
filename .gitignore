@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.vite/
+
+# Храним в репозитории только активную web-версию карты.
+*.glb
+!Карта-web-meshopt.glb
+

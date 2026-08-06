@@ -1,0 +1,19 @@
+{
+  "name": "glb-walkthrough",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "meshoptimizer": "^1.2.0",
+    "three": "^0.179.1"
+  },
+  "devDependencies": {
+    "@gltf-transform/cli": "^4.4.2",
+    "vite": "^7.1.1"
+  }
+}

@@ -65,7 +65,8 @@ const draco = new DRACOLoader();
 draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
 
-loadSplitModel(['/map.glb.part1', '/map.glb.part2']).then((arrayBuffer) => {
+// При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
+loadSplitModel(['/map.glb.part1?v=1', '/map.glb.part2?v=1']).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
   model.updateMatrixWorld(true);

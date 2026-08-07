@@ -25,6 +25,8 @@ const mobileSprint = document.querySelector('#mobileSprint');
 const mobileCrouch = document.querySelector('#mobileCrouch');
 const mobileDown = document.querySelector('#mobileDown');
 const mobileFullscreen = document.querySelector('#mobileFullscreen');
+const mobileSound = document.querySelector('#mobileSound');
+const backgroundMusic = document.querySelector('#backgroundMusic');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xa9c7d8);
@@ -61,6 +63,7 @@ let onFloor = false;
 let physicsReady = false;
 const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
+backgroundMusic.volume = 0.28;
 
 // Blender: X=116.24, Y=-78.65, Z=7.7027.
 // GLB/Three.js меняет оси: (X, Y, Z) -> (X, Z, -Y).
@@ -248,6 +251,7 @@ animate();
 
 function beginExperience() {
   start.classList.add('hidden');
+  backgroundMusic.play().catch(() => {});
   if (isTouchDevice) {
     mobileControls.classList.remove('hidden');
     modeLabel.classList.remove('hidden');
@@ -268,6 +272,7 @@ document.addEventListener('mousemove', (event) => {
 });
 document.addEventListener('keydown', (event) => {
   keys[event.code] = true;
+  if (event.code === 'KeyM' && !event.repeat) toggleSound();
   if (event.code === 'KeyR' && ready) resetToEntrance();
   if (event.code === 'KeyF' && ready && !event.repeat) {
     toggleFlight();
@@ -287,6 +292,13 @@ function updateModeLabel() {
   modeLabel.textContent = flightMode
     ? 'Полёт · Space вверх · Ctrl вниз · Shift ускорение · двойной Space/F — ходьба'
     : 'Ходьба · C/Ctrl сесть · Space прыжок · Shift ускорение · двойной Space/F — полёт';
+}
+
+function toggleSound() {
+  backgroundMusic.muted = !backgroundMusic.muted;
+  mobileSound.textContent = backgroundMusic.muted ? 'Звук: выкл.' : 'Звук: вкл.';
+  mobileSound.classList.toggle('is-active', !backgroundMusic.muted);
+  if (!backgroundMusic.muted && backgroundMusic.paused) backgroundMusic.play().catch(() => {});
 }
 
 function toggleFlight() {
@@ -356,6 +368,7 @@ function bindHoldButton(button, code) {
 bindHoldButton(mobileSprint, 'ShiftLeft');
 bindHoldButton(mobileCrouch, 'KeyC');
 bindHoldButton(mobileDown, 'ControlLeft');
+mobileSound.addEventListener('click', toggleSound);
 
 mobileFullscreen.addEventListener('click', async () => {
   try {

@@ -75,13 +75,8 @@ const draco = new DRACOLoader();
 draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
 
-const prefersLiteModel = isTouchDevice || (navigator.deviceMemory && navigator.deviceMemory <= 4);
-const qualityModelUrls = ['/map-quality.glb?v=2'];
-const liteModelUrls = ['/map-lite.glb?v=2'];
-if (prefersLiteModel) loadingText.textContent = 'Загрузка мобильной версии…';
-
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
-loadModelWithFallback().then((arrayBuffer) => {
+loadSplitModel(['/map.glb?v=3']).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
   model.updateMatrixWorld(true);
@@ -104,18 +99,6 @@ loadModelWithFallback().then((arrayBuffer) => {
   loadCollisionWorld();
   }, (error) => showError(`Не удалось разобрать карту\n${error.message || error}`));
 }).catch((error) => showError(`Не удалось загрузить карту\n${error.message || error}`));
-
-async function loadModelWithFallback() {
-  if (prefersLiteModel) return loadSplitModel(liteModelUrls);
-  try {
-    return await loadSplitModel(qualityModelUrls);
-  } catch (error) {
-    console.warn('Качественная карта недоступна, загружается облегчённая:', error);
-    progress.style.width = '0%';
-    loadingText.textContent = 'Загрузка облегчённой версии…';
-    return loadSplitModel(liteModelUrls);
-  }
-}
 
 async function loadSplitModel(urls) {
   const loaded = new Array(urls.length).fill(0);
@@ -153,7 +136,7 @@ function loadCollisionWorld() {
   loading.classList.remove('hidden');
   loadingText.textContent = 'Подготовка физики…';
   progress.style.width = '100%';
-  loader.load('/collision.glb?v=2', (gltf) => {
+  loader.load('/collision.glb?v=3', (gltf) => {
     gltf.scene.updateMatrixWorld(true);
     setTimeout(() => {
       worldOctree.fromGraphNode(gltf.scene);

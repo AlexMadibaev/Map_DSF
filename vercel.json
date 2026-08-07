@@ -1,16 +1,7 @@
 {
   "headers": [
     {
-      "source": "/map-quality.glb",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/map-lite.glb",
+      "source": "/map.glb",
       "headers": [
         {
           "key": "Cache-Control",

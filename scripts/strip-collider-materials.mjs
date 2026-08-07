@@ -9,7 +9,7 @@ const io = new NodeIO()
     'draco3d.encoder': await draco3d.createEncoderModule(),
   });
 
-const document = await io.read('Тест+.glb');
+const document = await io.read('public/map.glb');
 const root = document.getRoot();
 
 for (const mesh of root.listMeshes()) {

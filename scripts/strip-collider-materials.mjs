@@ -12,6 +12,23 @@ const io = new NodeIO()
 const document = await io.read('public/map.glb');
 const root = document.getRoot();
 
+// Индексы объектов в Тест++.glb, для которых нужна физика:
+// технический бокс, сцена, стадион/трибуны, земля и ворота.
+// Объекты фестивальных зон, вывески и декор намеренно исключены.
+const colliderNodeIndexes = new Set([
+  0, 1, 2,
+  ...range(19, 34),
+  49, 51, 52,
+  ...range(53, 68),
+  70,
+  ...range(81, 100),
+  ...range(143, 170),
+]);
+
+root.listNodes().forEach((node, index) => {
+  if (!colliderNodeIndexes.has(index)) node.dispose();
+});
+
 for (const mesh of root.listMeshes()) {
   for (const primitive of mesh.listPrimitives()) {
     primitive.setMaterial(null);
@@ -24,3 +41,7 @@ for (const material of root.listMaterials()) material.dispose();
 for (const texture of root.listTextures()) texture.dispose();
 
 await io.write('collision-bare.glb', document);
+
+function range(from, to) {
+  return Array.from({ length: to - from + 1 }, (_, index) => from + index);
+}

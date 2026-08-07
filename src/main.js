@@ -63,7 +63,7 @@ let onFloor = false;
 let physicsReady = false;
 const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
-backgroundMusic.volume = 0.28;
+backgroundMusic.volume = 0.65;
 
 // Blender: X=116.24, Y=-78.65, Z=7.7027.
 // GLB/Three.js меняет оси: (X, Y, Z) -> (X, Z, -Y).

@@ -156,7 +156,7 @@ function loadCollisionWorld() {
   loading.classList.remove('hidden');
   loadingText.textContent = 'Подготовка физики…';
   progress.style.width = '100%';
-  loader.load('/collision.glb?v=6', (gltf) => {
+  loader.load('/collision.glb?v=7', (gltf) => {
     gltf.scene.updateMatrixWorld(true);
     setTimeout(() => {
       worldOctree.fromGraphNode(gltf.scene);

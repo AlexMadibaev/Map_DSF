@@ -21,7 +21,7 @@ const colliderNodeIndexes = new Set([
   49, 51, 52,
   ...range(62, 68),
   ...range(91, 94),
-  96, 97, 98, 99, 100,
+  95, 96, 97, 98, 99, 100,
 ]);
 
 root.listNodes().forEach((node, index) => {

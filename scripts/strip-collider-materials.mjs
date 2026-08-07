@@ -1,6 +1,7 @@
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import draco3d from 'draco3dgltf';
+import { readFile } from 'node:fs/promises';
 
 const io = new NodeIO()
   .registerExtensions(ALL_EXTENSIONS)
@@ -9,7 +10,8 @@ const io = new NodeIO()
     'draco3d.encoder': await draco3d.createEncoderModule(),
   });
 
-const document = await io.read('public/map.glb');
+const mapParts = await Promise.all([1, 2, 3].map((part) => readFile(`public/map.glb.part${part}`)));
+const document = await io.readBinary(Buffer.concat(mapParts));
 const root = document.getRoot();
 
 // Названия объектов в финальном GLB, для которых нужна физика:

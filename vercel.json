@@ -1,7 +1,7 @@
 {
   "headers": [
     {
-      "source": "/map.glb",
+      "source": "/map.glb.part(.*)",
       "headers": [
         {
           "key": "Cache-Control",

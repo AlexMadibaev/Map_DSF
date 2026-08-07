@@ -1,8 +1,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
-const input = new URL('../Карта-web-meshopt.glb', import.meta.url);
+const input = new URL('../public/map.glb', import.meta.url);
 const outputDirectory = new URL('../public/', import.meta.url);
-const chunkSize = 60 * 1024 * 1024;
+const chunkSize = 20 * 1024 * 1024;
 const data = await readFile(input);
 
 await mkdir(outputDirectory, { recursive: true });

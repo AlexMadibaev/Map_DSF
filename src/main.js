@@ -67,6 +67,7 @@ let physicsReady = false;
 const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
 const mapDownloadBytes = 57567660;
+const mapPartBytes = [20971520, 20971520, 15624620];
 backgroundMusic.volume = 0.65;
 let installPrompt = null;
 
@@ -89,7 +90,11 @@ draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
-serviceWorkerReady.then(() => loadSplitModel(['/map.glb?v=6'])).then((arrayBuffer) => {
+serviceWorkerReady.then(() => loadSplitModel([
+  '/map.glb.part1?v=7',
+  '/map.glb.part2?v=7',
+  '/map.glb.part3?v=7',
+])).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
   model.updateMatrixWorld(true);
@@ -115,7 +120,7 @@ serviceWorkerReady.then(() => loadSplitModel(['/map.glb?v=6'])).then((arrayBuffe
 
 async function loadSplitModel(urls) {
   const loaded = new Array(urls.length).fill(0);
-  const totals = urls.map((url) => url.startsWith('/map.glb') ? mapDownloadBytes : 0);
+  const totals = urls.map((url, index) => url.startsWith('/map.glb.part') ? mapPartBytes[index] : mapDownloadBytes);
   const updateDownloadProgress = () => {
     const total = totals.reduce((sum, value) => sum + value, 0);
     const current = loaded.reduce((sum, value) => sum + value, 0);
@@ -124,30 +129,50 @@ async function loadSplitModel(urls) {
     progress.style.width = `${value}%`;
     loadingText.textContent = `${formatMegabytes(current)} / ${formatMegabytes(total)} МБ (${value}%)`;
   };
-  const parts = await Promise.all(urls.map((url, index) => new Promise((resolve, reject) => {
-    const request = new XMLHttpRequest();
-    request.open('GET', url, true);
-    request.responseType = 'arraybuffer';
-    request.onprogress = (event) => {
-      loaded[index] = event.loaded;
-      totals[index] = event.lengthComputable ? event.total : totals[index];
-      updateDownloadProgress();
-    };
-    request.onload = () => {
-      if (request.status < 200 || request.status >= 300) return reject(new Error(`${url}: HTTP ${request.status}`));
-      loaded[index] = request.response.byteLength;
-      updateDownloadProgress();
-      resolve(new Uint8Array(request.response));
-    };
-    request.onerror = () => reject(new Error(`${url}: ошибка сети`));
-    request.send();
-  })));
+  const parts = [];
+  for (let index = 0; index < urls.length; index += 1) {
+    parts.push(await loadPartWithRetry(urls[index], index, loaded, totals, updateDownloadProgress));
+  }
   if (parts.length === 1) return parts[0].buffer;
   const size = parts.reduce((sum, part) => sum + part.byteLength, 0);
   const combined = new Uint8Array(size);
   let offset = 0;
   for (const part of parts) { combined.set(part, offset); offset += part.byteLength; }
   return combined.buffer;
+}
+
+async function loadPartWithRetry(url, index, loaded, totals, updateProgress) {
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      return await new Promise((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.responseType = 'arraybuffer';
+        request.timeout = 120000;
+        request.onprogress = (event) => {
+          loaded[index] = event.loaded;
+          if (event.lengthComputable) totals[index] = event.total;
+          updateProgress();
+        };
+        request.onload = () => {
+          if (request.status < 200 || request.status >= 300) return reject(new Error(`HTTP ${request.status}`));
+          loaded[index] = request.response.byteLength;
+          updateProgress();
+          resolve(new Uint8Array(request.response));
+        };
+        request.onerror = () => reject(new Error('ошибка сети'));
+        request.ontimeout = () => reject(new Error('превышено время ожидания'));
+        request.send();
+      });
+    } catch (error) {
+      lastError = error;
+      loaded[index] = 0;
+      loadingText.textContent = `Повтор загрузки части ${index + 1}/3…`;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+    }
+  }
+  throw new Error(`${url}: ${lastError?.message || 'ошибка сети'}`);
 }
 
 function formatMegabytes(bytes) {

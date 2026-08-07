@@ -12,20 +12,30 @@ const io = new NodeIO()
 const document = await io.read('public/map.glb');
 const root = document.getRoot();
 
-// Индексы объектов в финальном GLB, для которых нужна физика:
+// Названия объектов в финальном GLB, для которых нужна физика:
 // техническая зона, сцена, арка и базовая поверхность земли.
 // Трибуны, сиденья, фестивальные зоны, вывески и декор исключены.
-const colliderNodeIndexes = new Set([
-  0, 1, 2,
-  ...range(26, 33),
-  49, 51, 52,
-  ...range(62, 68),
-  ...range(91, 94),
-  95, 96, 97, 98, 99, 100,
+const colliderNodeNames = new Set([
+  // Техническая зона.
+  'Куб.070', 'Куб.072', 'Плоскость.020',
+  'leather_part', 'Monitor', 'Cylinder.338', 'laptop14_screen.001',
+  // Сцена.
+  'Куб.022', 'Куб.023', 'Куб',
+  'BL|H40 Rectangular Section_ 2m (H40V-L200).022',
+  'BL|H40 Rectangular Section_ 2m (H40V-L200).007',
+  'BL|H40 Rectangular Section_ 2m (H40V-L200).006',
+  'BL|H40 Rectangular Section_ 2m (H40V-L200).005',
+  'BL|H40 Rectangular Section_ 2m (H40V-L200).004',
+  'BL|Static_40.006', 'Куб.037', 'Куб.039', 'Куб.052',
+  'Куб.060', 'Куб.061', 'Куб.062', 'Куб.063', 'Куб.064', 'Куб.069',
+  // Арка.
+  'Куб.056', 'Куб.057', 'Куб.058', 'Куб.059',
+  // Пол и рельеф.
+  'Плоскость', 'Плоскость.002',
 ]);
 
-root.listNodes().forEach((node, index) => {
-  if (!colliderNodeIndexes.has(index)) node.dispose();
+root.listNodes().forEach((node) => {
+  if (!colliderNodeNames.has(node.getName())) node.dispose();
 });
 
 for (const mesh of root.listMeshes()) {
@@ -40,7 +50,3 @@ for (const material of root.listMaterials()) material.dispose();
 for (const texture of root.listTextures()) texture.dispose();
 
 await io.write('collision-bare.glb', document);
-
-function range(from, to) {
-  return Array.from({ length: to - from + 1 }, (_, index) => from + index);
-}

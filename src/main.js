@@ -66,7 +66,7 @@ let onFloor = false;
 let physicsReady = false;
 const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
-const mapDownloadBytes = 57406472;
+const mapDownloadBytes = 57567660;
 backgroundMusic.volume = 0.65;
 let installPrompt = null;
 
@@ -89,7 +89,7 @@ draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
-serviceWorkerReady.then(() => loadSplitModel(['/map.glb?v=5'])).then((arrayBuffer) => {
+serviceWorkerReady.then(() => loadSplitModel(['/map.glb?v=6'])).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
   model.updateMatrixWorld(true);
@@ -158,7 +158,7 @@ function loadCollisionWorld() {
   loading.classList.remove('hidden');
   loadingText.textContent = 'Подготовка физики…';
   progress.style.width = '100%';
-  loader.load('/collision.glb?v=8', (gltf) => {
+  loader.load('/collision.glb?v=9', (gltf) => {
     gltf.scene.updateMatrixWorld(true);
     setTimeout(() => {
       worldOctree.fromGraphNode(gltf.scene);

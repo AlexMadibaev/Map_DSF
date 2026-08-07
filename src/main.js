@@ -63,6 +63,7 @@ let onFloor = false;
 let physicsReady = false;
 const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
+const mapDownloadBytes = 75464208;
 backgroundMusic.volume = 0.65;
 
 // Blender: X=116.24, Y=-78.65, Z=7.7027.
@@ -102,7 +103,15 @@ loadSplitModel(['/map.glb?v=3']).then((arrayBuffer) => {
 
 async function loadSplitModel(urls) {
   const loaded = new Array(urls.length).fill(0);
-  const totals = new Array(urls.length).fill(0);
+  const totals = urls.map((url) => url.startsWith('/map.glb') ? mapDownloadBytes : 0);
+  const updateDownloadProgress = () => {
+    const total = totals.reduce((sum, value) => sum + value, 0);
+    const current = loaded.reduce((sum, value) => sum + value, 0);
+    if (total <= 0) return;
+    const value = Math.min(100, Math.round(current / total * 100));
+    progress.style.width = `${value}%`;
+    loadingText.textContent = `${formatMegabytes(current)} / ${formatMegabytes(total)} МБ (${value}%)`;
+  };
   const parts = await Promise.all(urls.map((url, index) => new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open('GET', url, true);
@@ -110,17 +119,14 @@ async function loadSplitModel(urls) {
     request.onprogress = (event) => {
       loaded[index] = event.loaded;
       totals[index] = event.lengthComputable ? event.total : totals[index];
-      const total = totals.reduce((sum, value) => sum + value, 0);
-      const current = loaded.reduce((sum, value) => sum + value, 0);
-      if (total > 0) {
-        const value = Math.min(100, Math.round(current / total * 100));
-        progress.style.width = `${value}%`;
-        loadingText.textContent = `${value}%`;
-      }
+      updateDownloadProgress();
     };
-    request.onload = () => request.status >= 200 && request.status < 300
-      ? resolve(new Uint8Array(request.response))
-      : reject(new Error(`${url}: HTTP ${request.status}`));
+    request.onload = () => {
+      if (request.status < 200 || request.status >= 300) return reject(new Error(`${url}: HTTP ${request.status}`));
+      loaded[index] = request.response.byteLength;
+      updateDownloadProgress();
+      resolve(new Uint8Array(request.response));
+    };
     request.onerror = () => reject(new Error(`${url}: ошибка сети`));
     request.send();
   })));
@@ -130,6 +136,10 @@ async function loadSplitModel(urls) {
   let offset = 0;
   for (const part of parts) { combined.set(part, offset); offset += part.byteLength; }
   return combined.buffer;
+}
+
+function formatMegabytes(bytes) {
+  return (bytes / 1_000_000).toFixed(1).replace('.', ',');
 }
 
 function loadCollisionWorld() {

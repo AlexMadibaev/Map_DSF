@@ -27,6 +27,7 @@ const mobileDown = document.querySelector('#mobileDown');
 const mobileFullscreen = document.querySelector('#mobileFullscreen');
 const mobileSound = document.querySelector('#mobileSound');
 const backgroundMusic = document.querySelector('#backgroundMusic');
+const installButton = document.querySelector('#installButton');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xa9c7d8);
@@ -65,6 +66,15 @@ const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
 const mapDownloadBytes = 75464208;
 backgroundMusic.volume = 0.65;
+let installPrompt = null;
+
+const serviceWorkerReady = 'serviceWorker' in navigator
+  ? navigator.serviceWorker.register('/sw.js').then(() => navigator.serviceWorker.ready).catch((error) => console.warn(error))
+  : Promise.resolve();
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  installPrompt = event;
+});
 
 // Blender: X=116.24, Y=-78.65, Z=7.7027.
 // GLB/Three.js меняет оси: (X, Y, Z) -> (X, Z, -Y).
@@ -77,7 +87,7 @@ draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
-loadSplitModel(['/map.glb?v=3']).then((arrayBuffer) => {
+serviceWorkerReady.then(() => loadSplitModel(['/map.glb?v=3'])).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
   model.updateMatrixWorld(true);
@@ -245,11 +255,30 @@ animate();
 function beginExperience() {
   start.classList.add('hidden');
   backgroundMusic.play().catch(() => {});
+  requestPersistentStorage();
   if (isTouchDevice) {
     mobileControls.classList.remove('hidden');
     modeLabel.classList.remove('hidden');
   } else canvas.requestPointerLock();
 }
+
+async function requestPersistentStorage() {
+  if (!navigator.storage?.persist) return;
+  try { await navigator.storage.persist(); } catch (error) { console.warn(error); }
+}
+
+installButton.addEventListener('click', async () => {
+  if (installPrompt) {
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    installPrompt = null;
+    return;
+  }
+  const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  alert(isiOS
+    ? 'На iPhone нажмите «Поделиться», затем «На экран Домой».'
+    : 'Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран».');
+});
 startButton.addEventListener('click', beginExperience);
 canvas.addEventListener('click', () => { if (ready && !isTouchDevice && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
 document.addEventListener('pointerlockchange', () => {

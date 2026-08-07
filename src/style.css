@@ -14,6 +14,8 @@ button { font: inherit; }
 .start p { margin: 0 0 24px; color: #c0cbd1; }
 .start button { justify-self: center; padding: 13px 28px; border: 0; border-radius: 999px; color: #07120c; background: #67d9a0; cursor: pointer; font-weight: 750; }
 .start button:hover { background: #86e8b8; transform: translateY(-1px); }
+.start .install-button { margin-top: 10px; color: #e6eef1; background: rgba(255,255,255,.12); }
+.start .install-button:hover { background: rgba(255,255,255,.2); }
 .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; width: min(760px, 90vw); margin-top: 28px; color: #aebbc3; font-size: 13px; }
 .hint { position: fixed; left: 50%; bottom: 28px; z-index: 5; translate: -50%; padding: 9px 14px; border-radius: 999px; background: rgba(0,0,0,.55); color: #dce4e8; font-size: 13px; pointer-events: none; }
 .mode { position: fixed; left: 18px; top: 18px; z-index: 5; padding: 9px 13px; border-radius: 9px; background: rgba(0,0,0,.52); color: #e6eef1; font-size: 13px; pointer-events: none; }

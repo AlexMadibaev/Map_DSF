@@ -314,6 +314,15 @@ window.addEventListener('resize', () => {
 
 document.addEventListener('dblclick', (event) => event.preventDefault(), { passive: false });
 document.addEventListener('contextmenu', (event) => { if (isTouchDevice) event.preventDefault(); });
+let lastTouchEndTime = 0;
+document.addEventListener('touchend', (event) => {
+  const now = performance.now();
+  if (now - lastTouchEndTime < 400) event.preventDefault();
+  lastTouchEndTime = now;
+}, { passive: false, capture: true });
+document.addEventListener('touchmove', (event) => {
+  if (event.touches.length > 1) event.preventDefault();
+}, { passive: false, capture: true });
 for (const eventName of ['gesturestart', 'gesturechange', 'gestureend']) {
   document.addEventListener(eventName, (event) => event.preventDefault(), { passive: false });
 }

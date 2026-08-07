@@ -22,6 +22,7 @@ button { font: inherit; user-select: none; -webkit-user-select: none; touch-acti
 .crosshair { position: fixed; left: 50%; top: 50%; z-index: 4; width: 5px; height: 5px; translate: -50% -50%; border: 1px solid rgba(255,255,255,.8); border-radius: 50%; pointer-events: none; }
 .error { padding: 30px; color: #ffb4b4; white-space: pre-wrap; }
 .mobile-controls { display: none; position: fixed; inset: 0; z-index: 6; pointer-events: none; touch-action: none; user-select: none; }
+.mobile-controls, .mobile-controls * { touch-action: none !important; -webkit-user-select: none !important; }
 .look-area { position: absolute; inset: 0 0 0 42%; pointer-events: auto; touch-action: none; }
 .joystick { position: absolute; left: max(22px, env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom)); width: 124px; height: 124px; border: 2px solid rgba(255,255,255,.35); border-radius: 50%; background: rgba(0,0,0,.25); pointer-events: auto; touch-action: none; }
 .joystick__knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; translate: -50% -50%; border-radius: 50%; background: rgba(255,255,255,.68); box-shadow: 0 3px 12px rgba(0,0,0,.3); }

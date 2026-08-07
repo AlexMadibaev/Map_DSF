@@ -1,4 +1,4 @@
-const CACHE_NAME = 'map-dsf-v9';
+const CACHE_NAME = 'map-dsf-v10';
 const CORE_FILES = [
   '/',
   '/manifest.webmanifest',
@@ -35,7 +35,9 @@ self.addEventListener('fetch', (event) => {
       const cached = await cache.match(request);
       if (cached) return cached;
       const response = await fetch(request);
-      if (response.ok) await cache.put(request, response.clone());
+      if (response.ok) {
+        try { await cache.put(request, response.clone()); } catch (error) { console.warn('Cache write failed:', error); }
+      }
       return response;
     }),
   );

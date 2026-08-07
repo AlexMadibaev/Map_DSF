@@ -28,6 +28,9 @@ const mobileFullscreen = document.querySelector('#mobileFullscreen');
 const mobileSound = document.querySelector('#mobileSound');
 const backgroundMusic = document.querySelector('#backgroundMusic');
 const installButton = document.querySelector('#installButton');
+const isTouchDevice = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+const isiOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xa9c7d8);
@@ -35,8 +38,8 @@ scene.fog = new THREE.FogExp2(0xa9c7d8, 0.00018);
 
 const camera = new THREE.PerspectiveCamera(100, innerWidth / innerHeight, 0.05, 100000);
 camera.rotation.order = 'YXZ';
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isTouchDevice, powerPreference: 'high-performance' });
+renderer.setPixelRatio(isTouchDevice ? 1 : Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -53,7 +56,6 @@ const playerCollider = new Capsule(new THREE.Vector3(), new THREE.Vector3(), 0.3
 const keys = Object.create(null);
 const clock = new THREE.Clock();
 const mobileMove = new THREE.Vector2();
-const isTouchDevice = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 let bounds;
 let ready = false;
 let flightMode = false;
@@ -307,8 +309,15 @@ window.addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(isTouchDevice ? 1 : Math.min(devicePixelRatio, 2));
 });
+
+document.addEventListener('dblclick', (event) => event.preventDefault(), { passive: false });
+document.addEventListener('contextmenu', (event) => { if (isTouchDevice) event.preventDefault(); });
+for (const eventName of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(eventName, (event) => event.preventDefault(), { passive: false });
+}
+document.addEventListener('selectstart', (event) => event.preventDefault());
 
 function updateModeLabel() {
   modeLabel.textContent = flightMode

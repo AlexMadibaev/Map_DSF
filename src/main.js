@@ -33,8 +33,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xa9c7d8);
 scene.fog = new THREE.FogExp2(0xa9c7d8, 0.00018);
 
-const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 100000);
-camera.setFocalLength(20);
+const camera = new THREE.PerspectiveCamera(120, innerWidth / innerHeight, 0.05, 100000);
 camera.rotation.order = 'YXZ';
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));

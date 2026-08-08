@@ -1,7 +1,7 @@
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import draco3d from 'draco3dgltf';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 
 const io = new NodeIO()
   .registerExtensions(ALL_EXTENSIONS)
@@ -10,7 +10,10 @@ const io = new NodeIO()
     'draco3d.encoder': await draco3d.createEncoderModule(),
   });
 
-const mapParts = await Promise.all([1, 2, 3].map((part) => readFile(`public/map.glb.part${part}`)));
+const mapPartNames = (await readdir('public'))
+  .filter((name) => /^map\.glb\.part\d+$/.test(name))
+  .sort((a, b) => Number(a.match(/\d+$/)[0]) - Number(b.match(/\d+$/)[0]));
+const mapParts = await Promise.all(mapPartNames.map((name) => readFile(`public/${name}`)));
 const document = await io.readBinary(Buffer.concat(mapParts));
 const root = document.getRoot();
 

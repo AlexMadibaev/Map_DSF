@@ -1,9 +1,9 @@
-const CACHE_NAME = 'map-dsf-v12';
+const CACHE_NAME = 'map-dsf-v13';
 const CORE_FILES = [
   '/',
   '/manifest.webmanifest',
   '/favicon.svg',
-  '/collision.glb?v=9',
+  '/collision.glb?v=10',
 ];
 
 self.addEventListener('install', (event) => {

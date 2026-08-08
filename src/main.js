@@ -66,8 +66,8 @@ let onFloor = false;
 let physicsReady = false;
 const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
-const mapDownloadBytes = 57567660;
-const mapPartBytes = [20971520, 20971520, 15624620];
+const mapDownloadBytes = 94995812;
+const mapPartBytes = [20971520, 20971520, 20971520, 20971520, 11109732];
 backgroundMusic.volume = 0.65;
 let installPrompt = null;
 
@@ -91,9 +91,11 @@ const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptD
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
 serviceWorkerReady.then(() => loadSplitModel([
-  '/map.glb.part1?v=7',
-  '/map.glb.part2?v=7',
-  '/map.glb.part3?v=7',
+  '/map.glb.part1?v=8',
+  '/map.glb.part2?v=8',
+  '/map.glb.part3?v=8',
+  '/map.glb.part4?v=8',
+  '/map.glb.part5?v=8',
 ])).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
@@ -168,7 +170,7 @@ async function loadPartWithRetry(url, index, loaded, totals, updateProgress) {
     } catch (error) {
       lastError = error;
       loaded[index] = 0;
-      loadingText.textContent = `Повтор загрузки части ${index + 1}/3…`;
+      loadingText.textContent = `Повтор загрузки части ${index + 1}/${totals.length}…`;
       await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
     }
   }
@@ -183,7 +185,7 @@ function loadCollisionWorld() {
   loading.classList.remove('hidden');
   loadingText.textContent = 'Подготовка физики…';
   progress.style.width = '100%';
-  loader.load('/collision.glb?v=9', (gltf) => {
+  loader.load('/collision.glb?v=10', (gltf) => {
     gltf.scene.updateMatrixWorld(true);
     setTimeout(() => {
       worldOctree.fromGraphNode(gltf.scene);

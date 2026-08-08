@@ -79,11 +79,11 @@ window.addEventListener('beforeinstallprompt', (event) => {
   installPrompt = event;
 });
 
-// Blender: X=116.24, Y=-78.65, Z=7.7027.
+// Blender: X=143.88 м, Y=-118.93 м, Z=5.5711 м.
 // GLB/Three.js меняет оси: (X, Y, Z) -> (X, Z, -Y).
-const entrance = new THREE.Vector3(116.24, 7.7027, 78.65);
-const entrancePitch = THREE.MathUtils.degToRad(97.85 - 90);
-const entranceYaw = THREE.MathUtils.degToRad(-21.2);
+const entrance = new THREE.Vector3(143.88, 5.5711, 118.93);
+const entrancePitch = THREE.MathUtils.degToRad(95 - 90);
+const entranceYaw = 0;
 
 const draco = new DRACOLoader();
 draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');

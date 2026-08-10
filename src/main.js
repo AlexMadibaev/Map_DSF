@@ -38,7 +38,11 @@ scene.fog = new THREE.FogExp2(0xa9c7d8, 0.00018);
 
 const camera = new THREE.PerspectiveCamera(100, innerWidth / innerHeight, 0.05, 100000);
 camera.rotation.order = 'YXZ';
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isTouchDevice, powerPreference: 'high-performance' });
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: !isTouchDevice,
+  powerPreference: isTouchDevice ? 'low-power' : 'high-performance',
+});
 renderer.setPixelRatio(isTouchDevice ? 1 : Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -51,6 +55,11 @@ sun.position.set(1, 2, 1);
 scene.add(sun);
 
 const velocity = new THREE.Vector3();
+const forwardVector = new THREE.Vector3();
+const rightVector = new THREE.Vector3();
+const movementVector = new THREE.Vector3();
+const collisionSpeed = new THREE.Vector3();
+const colliderOffset = new THREE.Vector3();
 const worldOctree = new Octree();
 const playerHeight = 1.8;
 const playerRadius = 0.35;
@@ -204,7 +213,8 @@ function loadCollisionWorld() {
 
 function syncColliderToCamera() {
   const colliderSegmentHeight = playerHeight - playerRadius * 2;
-  playerCollider.start.copy(camera.position).add(new THREE.Vector3(0, -colliderSegmentHeight, 0));
+  colliderOffset.set(0, -colliderSegmentHeight, 0);
+  playerCollider.start.copy(camera.position).add(colliderOffset);
   playerCollider.end.copy(camera.position);
 }
 
@@ -227,10 +237,10 @@ function updatePlayer(delta) {
     const crouching = !flightMode && (keys.KeyC || keys.ControlLeft || keys.ControlRight);
     const speedMultiplier = crouching ? 0.45 : (sprinting ? sprintMultiplier : (flightMode ? flightMultiplier : 1));
     const acceleration = moveSpeed * speedMultiplier * delta;
-    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    const forward = forwardVector.set(0, 0, -1).applyQuaternion(camera.quaternion);
     forward.y = 0;
     forward.normalize();
-    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    const right = rightVector.set(1, 0, 0).applyQuaternion(camera.quaternion);
     right.y = 0;
     right.normalize();
     if (keys.KeyW || keys.ArrowUp) velocity.addScaledVector(forward, acceleration);
@@ -248,7 +258,7 @@ function updatePlayer(delta) {
     syncColliderToCamera();
   } else if (physicsReady) {
     verticalSpeed -= 24 * delta;
-    const movement = new THREE.Vector3(velocity.x, verticalSpeed, velocity.z).multiplyScalar(delta);
+    const movement = movementVector.set(velocity.x, verticalSpeed, velocity.z).multiplyScalar(delta);
     const steps = THREE.MathUtils.clamp(Math.ceil(movement.length() / 0.3), 1, 20);
     movement.multiplyScalar(1 / steps);
     onFloor = false;
@@ -266,7 +276,7 @@ function playerCollisions() {
   const result = worldOctree.capsuleIntersect(playerCollider);
   if (!result) return;
   if (result.normal.y > 0.35) onFloor = true;
-  const speed = new THREE.Vector3(velocity.x, verticalSpeed, velocity.z);
+  const speed = collisionSpeed.set(velocity.x, verticalSpeed, velocity.z);
   const intoSurface = speed.dot(result.normal);
   if (intoSurface < 0) {
     speed.addScaledVector(result.normal, -intoSurface);
@@ -278,12 +288,19 @@ function playerCollisions() {
   playerCollider.translate(result.normal.multiplyScalar(result.depth));
 }
 
-function animate() {
+let lastMobileFrame = 0;
+function animate(timestamp = 0) {
+  requestAnimationFrame(animate);
+  if (document.hidden) {
+    clock.getDelta();
+    return;
+  }
+  if (isTouchDevice && timestamp - lastMobileFrame < 1000 / 30) return;
+  lastMobileFrame = timestamp;
   updatePlayer(Math.min(0.05, clock.getDelta()));
   renderer.render(scene, camera);
-  requestAnimationFrame(animate);
 }
-animate();
+requestAnimationFrame(animate);
 
 function beginExperience() {
   start.classList.add('hidden');

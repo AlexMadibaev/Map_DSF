@@ -52,7 +52,9 @@ scene.add(sun);
 
 const velocity = new THREE.Vector3();
 const worldOctree = new Octree();
-const playerCollider = new Capsule(new THREE.Vector3(), new THREE.Vector3(), 0.35);
+const playerHeight = 1.8;
+const playerRadius = 0.35;
+const playerCollider = new Capsule(new THREE.Vector3(), new THREE.Vector3(), playerRadius);
 const keys = Object.create(null);
 const clock = new THREE.Clock();
 const mobileMove = new THREE.Vector2();
@@ -66,8 +68,8 @@ let onFloor = false;
 let physicsReady = false;
 const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
-const mapDownloadBytes = 94995812;
-const mapPartBytes = [20971520, 20971520, 20971520, 20971520, 11109732];
+const mapDownloadBytes = 105966952;
+const mapPartBytes = [20971520, 20971520, 20971520, 20971520, 20971520, 1109352];
 backgroundMusic.volume = 0.65;
 let installPrompt = null;
 
@@ -91,11 +93,12 @@ const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptD
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
 serviceWorkerReady.then(() => loadSplitModel([
-  '/map.glb.part1?v=8',
-  '/map.glb.part2?v=8',
-  '/map.glb.part3?v=8',
-  '/map.glb.part4?v=8',
-  '/map.glb.part5?v=8',
+  '/map.glb.part1?v=9',
+  '/map.glb.part2?v=9',
+  '/map.glb.part3?v=9',
+  '/map.glb.part4?v=9',
+  '/map.glb.part5?v=9',
+  '/map.glb.part6?v=9',
 ])).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
@@ -200,7 +203,8 @@ function loadCollisionWorld() {
 }
 
 function syncColliderToCamera() {
-  playerCollider.start.copy(camera.position).add(new THREE.Vector3(0, -1.3, 0));
+  const colliderSegmentHeight = playerHeight - playerRadius * 2;
+  playerCollider.start.copy(camera.position).add(new THREE.Vector3(0, -colliderSegmentHeight, 0));
   playerCollider.end.copy(camera.position);
 }
 

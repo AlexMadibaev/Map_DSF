@@ -1,4 +1,4 @@
-const CACHE_NAME = 'map-dsf-v13';
+const CACHE_NAME = 'map-dsf-v14';
 const CORE_FILES = [
   '/',
   '/manifest.webmanifest',

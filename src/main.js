@@ -93,12 +93,12 @@ const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptD
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
 serviceWorkerReady.then(() => loadSplitModel([
-  '/map.glb.part1?v=9',
-  '/map.glb.part2?v=9',
-  '/map.glb.part3?v=9',
-  '/map.glb.part4?v=9',
-  '/map.glb.part5?v=9',
-  '/map.glb.part6?v=9',
+  '/map.glb.part1?v=10',
+  '/map.glb.part2?v=10',
+  '/map.glb.part3?v=10',
+  '/map.glb.part4?v=10',
+  '/map.glb.part5?v=10',
+  '/map.glb.part6?v=10',
 ])).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;

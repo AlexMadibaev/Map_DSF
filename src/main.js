@@ -61,8 +61,10 @@ const movementVector = new THREE.Vector3();
 const collisionSpeed = new THREE.Vector3();
 const colliderOffset = new THREE.Vector3();
 const worldOctree = new Octree();
-const playerHeight = 1.8;
-const playerRadius = 0.35;
+// Character scale tuned to the food-court booths in the imported venue.
+const playerHeight = 2.5;
+const playerRadius = 0.49;
+const crouchOffset = playerHeight * 0.36;
 const playerCollider = new Capsule(new THREE.Vector3(), new THREE.Vector3(), playerRadius);
 const keys = Object.create(null);
 const clock = new THREE.Clock();
@@ -77,8 +79,7 @@ let onFloor = false;
 let physicsReady = false;
 const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
-const mapDownloadBytes = 105966952;
-const mapPartBytes = [20971520, 20971520, 20971520, 20971520, 20971520, 1109352];
+const mapDownloadBytes = 7909416;
 backgroundMusic.volume = 0.65;
 let installPrompt = null;
 
@@ -96,22 +97,54 @@ const entrance = new THREE.Vector3(143.88, 5.5711, 118.93);
 const entrancePitch = THREE.MathUtils.degToRad(95 - 90);
 const entranceYaw = 0;
 
+const fridgeBounds = [
+  { min: [38.35444, -9.36405, 0.90469], max: [39.40142, -8.30348, 3.13956] },
+  { min: [92.07658, 28.13181, 0.90469], max: [93.13716, 29.18002, 3.13956] },
+  { min: [12.12934, -9.24292, 0.90469], max: [13.17755, -8.18234, 3.13956] },
+  { min: [92.07658, 21.11076, 0.90469], max: [93.13716, 22.15774, 3.13956] },
+];
+
+function replaceFridgesWithRedBoxes(model) {
+  const redMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  model.traverse((object) => {
+    if (!object.isMesh) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    const fridgeMaterialIndexes = materials
+      .map((material, index) => (/fridge_c/i.test(material?.name || '') ? index : -1))
+      .filter((index) => index >= 0);
+    if (!fridgeMaterialIndexes.length) return;
+
+    if (materials.length === 1) {
+      object.geometry.setDrawRange(0, 0);
+    } else {
+      object.geometry.groups = object.geometry.groups.filter(
+        (group) => !fridgeMaterialIndexes.includes(group.materialIndex),
+      );
+    }
+
+    for (const bounds of fridgeBounds) {
+      const min = new THREE.Vector3(...bounds.min);
+      const max = new THREE.Vector3(...bounds.max);
+      const size = max.clone().sub(min);
+      const box = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), redMaterial);
+      box.position.copy(min.add(max).multiplyScalar(0.5));
+      object.add(box);
+    }
+  });
+}
+
 const draco = new DRACOLoader();
 draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
 serviceWorkerReady.then(() => loadSplitModel([
-  '/map.glb.part1?v=10',
-  '/map.glb.part2?v=10',
-  '/map.glb.part3?v=10',
-  '/map.glb.part4?v=10',
-  '/map.glb.part5?v=10',
-  '/map.glb.part6?v=10',
+  '/test-map.glb?v=12',
 ])).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
   model.updateMatrixWorld(true);
+  replaceFridgesWithRedBoxes(model);
   model.traverse((object) => {
     if (!object.isMesh) return;
     object.castShadow = false;
@@ -134,7 +167,7 @@ serviceWorkerReady.then(() => loadSplitModel([
 
 async function loadSplitModel(urls) {
   const loaded = new Array(urls.length).fill(0);
-  const totals = urls.map((url, index) => url.startsWith('/map.glb.part') ? mapPartBytes[index] : mapDownloadBytes);
+  const totals = urls.map(() => mapDownloadBytes);
   const updateDownloadProgress = () => {
     const total = totals.reduce((sum, value) => sum + value, 0);
     const current = loaded.reduce((sum, value) => sum + value, 0);
@@ -197,7 +230,7 @@ function loadCollisionWorld() {
   loading.classList.remove('hidden');
   loadingText.textContent = 'Подготовка физики…';
   progress.style.width = '100%';
-  loader.load('/collision.glb?v=10', (gltf) => {
+  loader.load('/collision.glb?v=11', (gltf) => {
     gltf.scene.updateMatrixWorld(true);
     setTimeout(() => {
       worldOctree.fromGraphNode(gltf.scene);
@@ -259,7 +292,7 @@ function updatePlayer(delta) {
   } else if (physicsReady) {
     verticalSpeed -= 24 * delta;
     const movement = movementVector.set(velocity.x, verticalSpeed, velocity.z).multiplyScalar(delta);
-    const steps = THREE.MathUtils.clamp(Math.ceil(movement.length() / 0.3), 1, 20);
+    const steps = THREE.MathUtils.clamp(Math.ceil(movement.length() / (playerRadius * 0.85)), 1, 20);
     movement.multiplyScalar(1 / steps);
     onFloor = false;
     for (let i = 0; i < steps; i += 1) {
@@ -267,7 +300,7 @@ function updatePlayer(delta) {
       playerCollisions();
     }
     camera.position.copy(playerCollider.end);
-    if (keys.KeyC || keys.ControlLeft || keys.ControlRight) camera.position.y -= 0.65;
+    if (keys.KeyC || keys.ControlLeft || keys.ControlRight) camera.position.y -= crouchOffset;
   }
   if (bounds && camera.position.y < bounds.min.y - 1000) resetToEntrance();
 }

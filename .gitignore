@@ -6,3 +6,4 @@ dist/
 *.glb
 !public/map.glb.part*
 !public/collision.glb
+!public/test-map.glb

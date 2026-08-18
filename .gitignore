@@ -1,8 +1,10 @@
 node_modules/
 dist/
 .vite/
+.tools/
 
 # Храним в репозитории только активную web-версию карты.
 *.glb
 !public/test-map.glb.part*
+!public/test-map-ios-ktx2.glb.part*
 !public/collision.glb

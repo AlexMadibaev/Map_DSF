@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { Octree } from 'three/addons/math/Octree.js';
 import { Capsule } from 'three/addons/math/Capsule.js';
@@ -81,6 +82,7 @@ const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
 const mapDownloadBytes = 7909416;
 const desktopMapPartBytes = [2097152, 2097152, 2097152, 1617960];
+const iosMapPartBytes = [...new Array(26).fill(2097152), 620768];
 backgroundMusic.volume = 0.65;
 let installPrompt = null;
 
@@ -129,17 +131,24 @@ function replaceFridgesWithRedBoxes(model) {
 
 const draco = new DRACOLoader();
 draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
-const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
+const ktx2 = new KTX2Loader().setTranscoderPath('/basis/').detectSupport(renderer);
+const loader = new GLTFLoader()
+  .setDRACOLoader(draco)
+  .setKTX2Loader(ktx2)
+  .setMeshoptDecoder(MeshoptDecoder);
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
-const mapUrls = [
-  '/test-map.glb.part1?v=14',
-  '/test-map.glb.part2?v=14',
-  '/test-map.glb.part3?v=14',
-  '/test-map.glb.part4?v=14',
-];
+const mapUrls = isiOSDevice
+  ? Array.from({ length: 27 }, (_, index) => `/test-map-ios-ktx2.glb.part${index + 1}?v=15`)
+  : [
+      '/test-map.glb.part1?v=14',
+      '/test-map.glb.part2?v=14',
+      '/test-map.glb.part3?v=14',
+      '/test-map.glb.part4?v=14',
+    ];
+const selectedMapPartBytes = isiOSDevice ? iosMapPartBytes : desktopMapPartBytes;
 
-serviceWorkerReady.then(() => loadSplitModel(mapUrls, desktopMapPartBytes)).then((arrayBuffer) => {
+serviceWorkerReady.then(() => loadSplitModel(mapUrls, selectedMapPartBytes)).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
   model.updateMatrixWorld(true);

@@ -10,6 +10,15 @@
       ]
     },
     {
+      "source": "/test-map-ios-ktx2.glb.part(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        }
+      ]
+    },
+    {
       "source": "/collision.glb",
       "headers": [
         {

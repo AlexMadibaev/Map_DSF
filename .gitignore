@@ -8,3 +8,4 @@ dist/
 !public/test-map.glb.part*
 !public/test-map-ios-ktx2.glb.part*
 !public/collision.glb
+!public/collision-ios.glb

@@ -245,7 +245,8 @@ function loadCollisionWorld() {
   loading.classList.remove('hidden');
   loadingText.textContent = 'Подготовка физики…';
   progress.style.width = '100%';
-  loader.load('/collision.glb?v=14', (gltf) => {
+  const collisionUrl = isiOSDevice ? '/collision-ios.glb?v=1' : '/collision.glb?v=14';
+  loader.load(collisionUrl, (gltf) => {
     gltf.scene.updateMatrixWorld(true);
     setTimeout(() => {
       worldOctree.fromGraphNode(gltf.scene);

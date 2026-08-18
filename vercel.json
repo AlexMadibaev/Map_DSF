@@ -28,6 +28,15 @@
       ]
     },
     {
+      "source": "/collision-ios.glb",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        }
+      ]
+    },
+    {
       "source": "/music.mp3",
       "headers": [
         {

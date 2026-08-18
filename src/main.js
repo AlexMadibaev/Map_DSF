@@ -81,7 +81,6 @@ const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
 const mapDownloadBytes = 7909416;
 const desktopMapPartBytes = [2097152, 2097152, 2097152, 1617960];
-const iosMapPartBytes = [2097152, 2097152, 669836];
 backgroundMusic.volume = 0.65;
 let installPrompt = null;
 
@@ -108,41 +107,15 @@ const fridgeBounds = [
 
 function replaceFridgesWithRedBoxes(model) {
   const redMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-  const meshes = [];
   let anchor = null;
   model.traverse((object) => {
     if (!object.isMesh) return;
-    meshes.push(object);
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     if (materials.some((material) => /fridge_c/i.test(material?.name || ''))) anchor = object;
   });
   if (!anchor) return;
-
-  const padding = 0.03;
-  const isInsideFridge = (x, y, z) => fridgeBounds.some(({ min, max }) => (
-    x >= min[0] - padding && x <= max[0] + padding
-    && y >= min[1] - padding && y <= max[1] + padding
-    && z >= min[2] - padding && z <= max[2] + padding
-  ));
-
-  for (const mesh of meshes) {
-    const geometry = mesh.geometry;
-    const position = geometry.getAttribute('position');
-    if (!position) continue;
-    const sourceIndex = geometry.index;
-    const triangleCount = (sourceIndex ? sourceIndex.count : position.count) / 3;
-    const keptIndices = [];
-    for (let triangle = 0; triangle < triangleCount; triangle += 1) {
-      const a = sourceIndex ? sourceIndex.getX(triangle * 3) : triangle * 3;
-      const b = sourceIndex ? sourceIndex.getX(triangle * 3 + 1) : triangle * 3 + 1;
-      const c = sourceIndex ? sourceIndex.getX(triangle * 3 + 2) : triangle * 3 + 2;
-      const centerX = (position.getX(a) + position.getX(b) + position.getX(c)) / 3;
-      const centerY = (position.getY(a) + position.getY(b) + position.getY(c)) / 3;
-      const centerZ = (position.getZ(a) + position.getZ(b) + position.getZ(c)) / 3;
-      if (!isInsideFridge(centerX, centerY, centerZ)) keptIndices.push(a, b, c);
-    }
-    if (keptIndices.length !== triangleCount * 3) geometry.setIndex(keptIndices);
-  }
+  anchor.geometry.dispose();
+  anchor.geometry = new THREE.BufferGeometry();
 
   for (const bounds of fridgeBounds) {
     const min = new THREE.Vector3(...bounds.min);
@@ -159,21 +132,14 @@ draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
-const mapUrls = isiOSDevice
-  ? [
-      '/test-map-ios.glb.part1?v=14',
-      '/test-map-ios.glb.part2?v=14',
-      '/test-map-ios.glb.part3?v=14',
-    ]
-  : [
-      '/test-map.glb.part1?v=13',
-      '/test-map.glb.part2?v=13',
-      '/test-map.glb.part3?v=13',
-      '/test-map.glb.part4?v=13',
-    ];
-const selectedMapPartBytes = isiOSDevice ? iosMapPartBytes : desktopMapPartBytes;
+const mapUrls = [
+  '/test-map.glb.part1?v=14',
+  '/test-map.glb.part2?v=14',
+  '/test-map.glb.part3?v=14',
+  '/test-map.glb.part4?v=14',
+];
 
-serviceWorkerReady.then(() => loadSplitModel(mapUrls, selectedMapPartBytes)).then((arrayBuffer) => {
+serviceWorkerReady.then(() => loadSplitModel(mapUrls, desktopMapPartBytes)).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
   model.updateMatrixWorld(true);
@@ -270,7 +236,7 @@ function loadCollisionWorld() {
   loading.classList.remove('hidden');
   loadingText.textContent = 'Подготовка физики…';
   progress.style.width = '100%';
-  loader.load('/collision.glb?v=13', (gltf) => {
+  loader.load('/collision.glb?v=14', (gltf) => {
     gltf.scene.updateMatrixWorld(true);
     setTimeout(() => {
       worldOctree.fromGraphNode(gltf.scene);

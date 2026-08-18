@@ -1,8 +1,8 @@
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { meshopt } from '@gltf-transform/functions';
+import { join, meshopt, simplify, weld } from '@gltf-transform/functions';
 import draco3d from 'draco3dgltf';
-import { MeshoptEncoder } from 'meshoptimizer';
+import { MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
 
 const inputPath = 'public/test-map.glb';
 const outputPath = 'public/collision.glb';
@@ -33,6 +33,17 @@ for (const material of root.listMaterials()) material.dispose();
 for (const texture of root.listTextures()) texture.dispose();
 
 await MeshoptEncoder.ready;
-await document.transform(meshopt({ encoder: MeshoptEncoder, level: 'high' }));
+await MeshoptSimplifier.ready;
+await document.transform(
+  join({ keepMeshes: true }),
+  weld(),
+  simplify({
+    simplifier: MeshoptSimplifier,
+    ratio: 0.05,
+    error: 0.002,
+    lockBorder: false,
+  }),
+  meshopt({ encoder: MeshoptEncoder, level: 'high' }),
+);
 await io.write(outputPath, document);
 console.log(`Collision map written to ${outputPath}`);

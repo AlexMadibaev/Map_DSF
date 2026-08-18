@@ -80,7 +80,8 @@ let physicsReady = false;
 const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
 const mapDownloadBytes = 7909416;
-const mapPartBytes = [2097152, 2097152, 2097152, 1617960];
+const desktopMapPartBytes = [2097152, 2097152, 2097152, 1617960];
+const iosMapPartBytes = [2097152, 2097152, 2097152, 678816];
 backgroundMusic.volume = 0.65;
 let installPrompt = null;
 
@@ -158,12 +159,22 @@ draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
-serviceWorkerReady.then(() => loadSplitModel([
-  '/test-map.glb.part1?v=13',
-  '/test-map.glb.part2?v=13',
-  '/test-map.glb.part3?v=13',
-  '/test-map.glb.part4?v=13',
-])).then((arrayBuffer) => {
+const mapUrls = isiOSDevice
+  ? [
+      '/test-map-ios.glb.part1?v=14',
+      '/test-map-ios.glb.part2?v=14',
+      '/test-map-ios.glb.part3?v=14',
+      '/test-map-ios.glb.part4?v=14',
+    ]
+  : [
+      '/test-map.glb.part1?v=13',
+      '/test-map.glb.part2?v=13',
+      '/test-map.glb.part3?v=13',
+      '/test-map.glb.part4?v=13',
+    ];
+const selectedMapPartBytes = isiOSDevice ? iosMapPartBytes : desktopMapPartBytes;
+
+serviceWorkerReady.then(() => loadSplitModel(mapUrls, selectedMapPartBytes)).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
   model.updateMatrixWorld(true);
@@ -188,9 +199,9 @@ serviceWorkerReady.then(() => loadSplitModel([
   }, (error) => showError(`Не удалось разобрать карту\n${error.message || error}`));
 }).catch((error) => showError(`Не удалось загрузить карту\n${error.message || error}`));
 
-async function loadSplitModel(urls) {
+async function loadSplitModel(urls, expectedPartBytes) {
   const loaded = new Array(urls.length).fill(0);
-  const totals = urls.map((_, index) => mapPartBytes[index] || mapDownloadBytes / urls.length);
+  const totals = urls.map((_, index) => expectedPartBytes[index] || mapDownloadBytes / urls.length);
   const updateDownloadProgress = () => {
     const total = totals.reduce((sum, value) => sum + value, 0);
     const current = loaded.reduce((sum, value) => sum + value, 0);

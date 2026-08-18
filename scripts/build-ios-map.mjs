@@ -19,12 +19,27 @@ const names = (await readdir('public'))
 const parts = await Promise.all(names.map((name) => readFile(`public/${name}`)));
 const document = await io.readBinary(Buffer.concat(parts));
 
+for (const material of document.getRoot().listMaterials()) {
+  material.setNormalTexture(null);
+  material.setOcclusionTexture(null);
+  material.setMetallicRoughnessTexture(null);
+  material.setMetallicFactor(0);
+  material.setRoughnessFactor(0.8);
+}
+for (const mesh of document.getRoot().listMeshes()) {
+  for (const primitive of mesh.listPrimitives()) {
+    primitive.setAttribute('COLOR_1', null);
+    primitive.setAttribute('TEXCOORD_1', null);
+    primitive.setAttribute('TANGENT', null);
+  }
+}
+
 await MeshoptEncoder.ready;
 await MeshoptSimplifier.ready;
 await document.transform(
-  textureCompress({ targetFormat: 'webp', resize: [1024, 1024] }),
+  textureCompress({ targetFormat: 'webp', resize: [512, 512] }),
   weld(),
-  simplify({ simplifier: MeshoptSimplifier, ratio: 0.55, error: 0.001, lockBorder: true }),
+  simplify({ simplifier: MeshoptSimplifier, ratio: 0.2, error: 0.003, lockBorder: false }),
   meshopt({ encoder: MeshoptEncoder, level: 'high' }),
 );
 

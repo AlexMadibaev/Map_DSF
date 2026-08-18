@@ -44,8 +44,8 @@ await document.transform(
   weld(),
   simplify({
     simplifier: MeshoptSimplifier,
-    ratio: 0.05,
-    error: 0.002,
+    ratio: 0.015,
+    error: 0.004,
     lockBorder: false,
   }),
   meshopt({ encoder: MeshoptEncoder, level: 'high' }),

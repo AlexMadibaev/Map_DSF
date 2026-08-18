@@ -81,7 +81,7 @@ const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
 const mapDownloadBytes = 7909416;
 const desktopMapPartBytes = [2097152, 2097152, 2097152, 1617960];
-const iosMapPartBytes = [2097152, 2097152, 2097152, 678816];
+const iosMapPartBytes = [2097152, 2097152, 669836];
 backgroundMusic.volume = 0.65;
 let installPrompt = null;
 
@@ -164,7 +164,6 @@ const mapUrls = isiOSDevice
       '/test-map-ios.glb.part1?v=14',
       '/test-map-ios.glb.part2?v=14',
       '/test-map-ios.glb.part3?v=14',
-      '/test-map-ios.glb.part4?v=14',
     ]
   : [
       '/test-map.glb.part1?v=13',
@@ -271,7 +270,7 @@ function loadCollisionWorld() {
   loading.classList.remove('hidden');
   loadingText.textContent = 'Подготовка физики…';
   progress.style.width = '100%';
-  loader.load('/collision.glb?v=12', (gltf) => {
+  loader.load('/collision.glb?v=13', (gltf) => {
     gltf.scene.updateMatrixWorld(true);
     setTimeout(() => {
       worldOctree.fromGraphNode(gltf.scene);

@@ -1,48 +1,25 @@
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
+import { meshopt } from '@gltf-transform/functions';
 import draco3d from 'draco3dgltf';
-import { readFile, readdir } from 'node:fs/promises';
+import { MeshoptEncoder } from 'meshoptimizer';
+
+const inputPath = 'public/test-map.glb';
+const outputPath = 'public/collision.glb';
 
 const io = new NodeIO()
   .registerExtensions(ALL_EXTENSIONS)
   .registerDependencies({
     'draco3d.decoder': await draco3d.createDecoderModule(),
     'draco3d.encoder': await draco3d.createEncoderModule(),
+    'meshopt.encoder': MeshoptEncoder,
   });
 
-const mapPartNames = (await readdir('public'))
-  .filter((name) => /^map\.glb\.part\d+$/.test(name))
-  .sort((a, b) => Number(a.match(/\d+$/)[0]) - Number(b.match(/\d+$/)[0]));
-const mapParts = await Promise.all(mapPartNames.map((name) => readFile(`public/${name}`)));
-const document = await io.readBinary(Buffer.concat(mapParts));
+const document = await io.read(inputPath);
 const root = document.getRoot();
 
-// Названия объектов в финальном GLB, для которых нужна физика:
-// техническая зона, сцена, арка и базовая поверхность земли.
-// Трибуны, сиденья, фестивальные зоны, вывески и декор исключены.
-const colliderNodeNames = new Set([
-  // Техническая зона.
-  'Куб.070', 'Куб.072', 'Плоскость.020',
-  'leather_part', 'Monitor', 'Cylinder.338', 'laptop14_screen.001',
-  // Сцена.
-  'Куб.022', 'Куб.023', 'Куб',
-  'BL|H40 Rectangular Section_ 2m (H40V-L200).022',
-  'BL|H40 Rectangular Section_ 2m (H40V-L200).007',
-  'BL|H40 Rectangular Section_ 2m (H40V-L200).006',
-  'BL|H40 Rectangular Section_ 2m (H40V-L200).005',
-  'BL|H40 Rectangular Section_ 2m (H40V-L200).004',
-  'BL|Static_40.006', 'Куб.037', 'Куб.039', 'Куб.052',
-  'Куб.060', 'Куб.061', 'Куб.062', 'Куб.063', 'Куб.064', 'Куб.069',
-  // Арка.
-  'Куб.056', 'Куб.057', 'Куб.058', 'Куб.059',
-  // Пол и рельеф.
-  'Плоскость', 'Плоскость.002',
-]);
-
-root.listNodes().forEach((node) => {
-  if (!colliderNodeNames.has(node.getName())) node.dispose();
-});
-
+// The optimized visual map is merged into one mesh, so node-name filtering is
+// no longer reliable. Keep every triangle, but strip render-only data.
 for (const mesh of root.listMeshes()) {
   for (const primitive of mesh.listPrimitives()) {
     primitive.setMaterial(null);
@@ -51,7 +28,11 @@ for (const mesh of root.listMeshes()) {
     }
   }
 }
+
 for (const material of root.listMaterials()) material.dispose();
 for (const texture of root.listTextures()) texture.dispose();
 
-await io.write('collision-bare.glb', document);
+await MeshoptEncoder.ready;
+await document.transform(meshopt({ encoder: MeshoptEncoder, level: 'high' }));
+await io.write(outputPath, document);
+console.log(`Collision map written to ${outputPath}`);

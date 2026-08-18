@@ -80,6 +80,7 @@ let physicsReady = false;
 const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
 const mapDownloadBytes = 7909416;
+const mapPartBytes = [2097152, 2097152, 2097152, 1617960];
 backgroundMusic.volume = 0.65;
 let installPrompt = null;
 
@@ -189,7 +190,7 @@ serviceWorkerReady.then(() => loadSplitModel([
 
 async function loadSplitModel(urls) {
   const loaded = new Array(urls.length).fill(0);
-  const totals = urls.map(() => mapDownloadBytes / urls.length);
+  const totals = urls.map((_, index) => mapPartBytes[index] || mapDownloadBytes / urls.length);
   const updateDownloadProgress = () => {
     const total = totals.reduce((sum, value) => sum + value, 0);
     const current = loaded.reduce((sum, value) => sum + value, 0);
@@ -198,14 +199,21 @@ async function loadSplitModel(urls) {
     progress.style.width = `${value}%`;
     loadingText.textContent = `${formatMegabytes(current)} / ${formatMegabytes(total)} МБ (${value}%)`;
   };
-  const parts = await Promise.all(urls.map((url, index) => (
-    loadPartWithRetry(url, index, loaded, totals, updateDownloadProgress)
-  )));
-  if (parts.length === 1) return parts[0].buffer;
-  const size = parts.reduce((sum, part) => sum + part.byteLength, 0);
-  const combined = new Uint8Array(size);
-  let offset = 0;
-  for (const part of parts) { combined.set(part, offset); offset += part.byteLength; }
+  const offsets = totals.map((_, index) => totals.slice(0, index).reduce((sum, size) => sum + size, 0));
+  const combined = new Uint8Array(totals.reduce((sum, size) => sum + size, 0));
+  const loadIntoCombinedBuffer = async (url, index) => {
+    const part = await loadPartWithRetry(url, index, loaded, totals, updateDownloadProgress);
+    combined.set(part, offsets[index]);
+  };
+  if (isiOSDevice) {
+    // Safari has a strict memory limit. Load one part at a time and release it
+    // immediately after copying instead of retaining all responses plus a copy.
+    for (let index = 0; index < urls.length; index += 1) {
+      await loadIntoCombinedBuffer(urls[index], index);
+    }
+  } else {
+    await Promise.all(urls.map(loadIntoCombinedBuffer));
+  }
   return combined.buffer;
 }
 

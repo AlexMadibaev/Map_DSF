@@ -106,31 +106,50 @@ const fridgeBounds = [
 
 function replaceFridgesWithRedBoxes(model) {
   const redMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const meshes = [];
+  let anchor = null;
   model.traverse((object) => {
     if (!object.isMesh) return;
+    meshes.push(object);
     const materials = Array.isArray(object.material) ? object.material : [object.material];
-    const fridgeMaterialIndexes = materials
-      .map((material, index) => (/fridge_c/i.test(material?.name || '') ? index : -1))
-      .filter((index) => index >= 0);
-    if (!fridgeMaterialIndexes.length) return;
-
-    if (materials.length === 1) {
-      object.geometry.setDrawRange(0, 0);
-    } else {
-      object.geometry.groups = object.geometry.groups.filter(
-        (group) => !fridgeMaterialIndexes.includes(group.materialIndex),
-      );
-    }
-
-    for (const bounds of fridgeBounds) {
-      const min = new THREE.Vector3(...bounds.min);
-      const max = new THREE.Vector3(...bounds.max);
-      const size = max.clone().sub(min);
-      const box = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), redMaterial);
-      box.position.copy(min.add(max).multiplyScalar(0.5));
-      object.add(box);
-    }
+    if (materials.some((material) => /fridge_c/i.test(material?.name || ''))) anchor = object;
   });
+  if (!anchor) return;
+
+  const padding = 0.03;
+  const isInsideFridge = (x, y, z) => fridgeBounds.some(({ min, max }) => (
+    x >= min[0] - padding && x <= max[0] + padding
+    && y >= min[1] - padding && y <= max[1] + padding
+    && z >= min[2] - padding && z <= max[2] + padding
+  ));
+
+  for (const mesh of meshes) {
+    const geometry = mesh.geometry;
+    const position = geometry.getAttribute('position');
+    if (!position) continue;
+    const sourceIndex = geometry.index;
+    const triangleCount = (sourceIndex ? sourceIndex.count : position.count) / 3;
+    const keptIndices = [];
+    for (let triangle = 0; triangle < triangleCount; triangle += 1) {
+      const a = sourceIndex ? sourceIndex.getX(triangle * 3) : triangle * 3;
+      const b = sourceIndex ? sourceIndex.getX(triangle * 3 + 1) : triangle * 3 + 1;
+      const c = sourceIndex ? sourceIndex.getX(triangle * 3 + 2) : triangle * 3 + 2;
+      const centerX = (position.getX(a) + position.getX(b) + position.getX(c)) / 3;
+      const centerY = (position.getY(a) + position.getY(b) + position.getY(c)) / 3;
+      const centerZ = (position.getZ(a) + position.getZ(b) + position.getZ(c)) / 3;
+      if (!isInsideFridge(centerX, centerY, centerZ)) keptIndices.push(a, b, c);
+    }
+    if (keptIndices.length !== triangleCount * 3) geometry.setIndex(keptIndices);
+  }
+
+  for (const bounds of fridgeBounds) {
+    const min = new THREE.Vector3(...bounds.min);
+    const max = new THREE.Vector3(...bounds.max);
+    const size = max.clone().sub(min);
+    const box = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), redMaterial);
+    box.position.copy(min.add(max).multiplyScalar(0.5));
+    anchor.add(box);
+  }
 }
 
 const draco = new DRACOLoader();

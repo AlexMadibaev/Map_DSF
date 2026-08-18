@@ -1,9 +1,8 @@
-const CACHE_NAME = 'map-dsf-v18';
+const CACHE_NAME = 'map-dsf-v19';
 const CORE_FILES = [
   '/',
   '/manifest.webmanifest',
   '/favicon.svg',
-  '/collision.glb?v=12',
 ];
 
 self.addEventListener('install', (event) => {
@@ -24,6 +23,10 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || request.headers.has('range')) return;
+  if (url.pathname.endsWith('.glb') || url.pathname.includes('.glb.part')) {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(fetch(request).catch(() => caches.match('/')));

@@ -4,6 +4,5 @@ dist/
 
 # Храним в репозитории только активную web-версию карты.
 *.glb
-!public/map.glb.part*
+!public/test-map.glb.part*
 !public/collision.glb
-!public/test-map.glb

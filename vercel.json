@@ -1,11 +1,11 @@
 {
   "headers": [
     {
-      "source": "/map.glb.part(.*)",
+      "source": "/test-map.glb.part(.*)",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
+          "value": "no-store, max-age=0"
         }
       ]
     },
@@ -14,16 +14,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/test-map.glb",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
+          "value": "no-store, max-age=0"
         }
       ]
     },

@@ -158,7 +158,10 @@ const loader = new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptD
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
 serviceWorkerReady.then(() => loadSplitModel([
-  '/test-map.glb?v=12',
+  '/test-map.glb.part1?v=13',
+  '/test-map.glb.part2?v=13',
+  '/test-map.glb.part3?v=13',
+  '/test-map.glb.part4?v=13',
 ])).then((arrayBuffer) => {
   loader.parse(arrayBuffer, '/', (gltf) => {
   const model = gltf.scene;
@@ -186,7 +189,7 @@ serviceWorkerReady.then(() => loadSplitModel([
 
 async function loadSplitModel(urls) {
   const loaded = new Array(urls.length).fill(0);
-  const totals = urls.map(() => mapDownloadBytes);
+  const totals = urls.map(() => mapDownloadBytes / urls.length);
   const updateDownloadProgress = () => {
     const total = totals.reduce((sum, value) => sum + value, 0);
     const current = loaded.reduce((sum, value) => sum + value, 0);
@@ -195,10 +198,9 @@ async function loadSplitModel(urls) {
     progress.style.width = `${value}%`;
     loadingText.textContent = `${formatMegabytes(current)} / ${formatMegabytes(total)} МБ (${value}%)`;
   };
-  const parts = [];
-  for (let index = 0; index < urls.length; index += 1) {
-    parts.push(await loadPartWithRetry(urls[index], index, loaded, totals, updateDownloadProgress));
-  }
+  const parts = await Promise.all(urls.map((url, index) => (
+    loadPartWithRetry(url, index, loaded, totals, updateDownloadProgress)
+  )));
   if (parts.length === 1) return parts[0].buffer;
   const size = parts.reduce((sum, part) => sum + part.byteLength, 0);
   const combined = new Uint8Array(size);
@@ -216,6 +218,7 @@ async function loadPartWithRetry(url, index, loaded, totals, updateProgress) {
         request.open('GET', url, true);
         request.responseType = 'arraybuffer';
         request.timeout = 120000;
+        request.setRequestHeader('Cache-Control', 'no-cache');
         request.onprogress = (event) => {
           loaded[index] = event.loaded;
           if (event.lengthComputable) totals[index] = event.total;

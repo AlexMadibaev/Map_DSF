@@ -3,8 +3,8 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { join, meshopt, simplify, weld } from '@gltf-transform/functions';
 import draco3d from 'draco3dgltf';
 import { MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
+import { readFile, readdir } from 'node:fs/promises';
 
-const inputPath = 'public/test-map.glb';
 const outputPath = 'public/collision.glb';
 
 const io = new NodeIO()
@@ -15,7 +15,12 @@ const io = new NodeIO()
     'meshopt.encoder': MeshoptEncoder,
   });
 
-const document = await io.read(inputPath);
+const mapPartNames = (await readdir('public'))
+  .filter((name) => /^test-map\.glb\.part\d+$/.test(name))
+  .sort((a, b) => Number(a.match(/\d+$/)[0]) - Number(b.match(/\d+$/)[0]));
+if (!mapPartNames.length) throw new Error('No test-map.glb.part* files found.');
+const mapParts = await Promise.all(mapPartNames.map((name) => readFile(`public/${name}`)));
+const document = await io.readBinary(Buffer.concat(mapParts));
 const root = document.getRoot();
 
 // The optimized visual map is merged into one mesh, so node-name filtering is

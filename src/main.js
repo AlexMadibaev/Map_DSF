@@ -33,7 +33,20 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xa9c7d8);
 scene.fog = new THREE.FogExp2(0xa9c7d8, 0.00018);
 
-const camera = new THREE.PerspectiveCamera(100, innerWidth / innerHeight, 0.05, 100000);
+// Base FOV is vertical, tuned for desktop's ~16:9 windows. Wider screens (most
+// phones in landscape) would otherwise get a noticeably wider horizontal field
+// of view at the same vertical FOV, which reads as "everything whips past
+// faster". Cap the horizontal sweep to what 16:9 shows and derive the vertical
+// FOV from that on wider screens, instead of growing it further.
+const baseVerticalFov = 100;
+const referenceAspect = 16 / 9;
+const referenceHorizontalFov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(baseVerticalFov) / 2) * referenceAspect);
+function verticalFovForAspect(aspect) {
+  if (aspect <= referenceAspect) return baseVerticalFov;
+  return THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(referenceHorizontalFov / 2) / aspect));
+}
+
+const camera = new THREE.PerspectiveCamera(verticalFovForAspect(innerWidth / innerHeight), innerWidth / innerHeight, 0.05, 100000);
 camera.rotation.order = 'YXZ';
 const renderer = new THREE.WebGLRenderer({
   canvas,
@@ -407,12 +420,22 @@ document.addEventListener('keydown', (event) => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
 });
 document.addEventListener('keyup', (event) => { keys[event.code] = false; });
-window.addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight;
+function syncViewport() {
+  // iOS Safari's address bar hides/shows without always firing a plain
+  // 'resize' with up-to-date numbers; visualViewport tracks the actual
+  // visible area, keeping the render buffer (and FOV) matched to it.
+  const width = window.visualViewport?.width ?? innerWidth;
+  const height = window.visualViewport?.height ?? innerHeight;
+  camera.aspect = width / height;
+  camera.fov = verticalFovForAspect(camera.aspect);
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(width, height);
   renderer.setPixelRatio(isTouchDevice ? 1 : Math.min(devicePixelRatio, 2));
-});
+}
+window.addEventListener('resize', syncViewport);
+window.addEventListener('orientationchange', syncViewport);
+window.visualViewport?.addEventListener('resize', syncViewport);
+screen.orientation?.addEventListener('change', syncViewport);
 
 document.addEventListener('dblclick', (event) => event.preventDefault(), { passive: false });
 document.addEventListener('contextmenu', (event) => { if (isTouchDevice) event.preventDefault(); });
@@ -513,6 +536,7 @@ mobileFullscreen.addEventListener('click', async () => {
 });
 document.addEventListener('fullscreenchange', () => {
   mobileFullscreen.textContent = document.fullscreenElement ? 'Выйти из полного экрана' : 'На весь экран';
+  syncViewport();
 });
 
 function showError(message) {

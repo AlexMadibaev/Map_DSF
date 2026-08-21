@@ -78,7 +78,7 @@ const sprintMultiplier = 4.5;
 const flightMultiplier = 2.5;
 const mapDownloadBytes = 7909416;
 const desktopMapPartBytes = [2097152, 2097152, 2097152, 1617960];
-const iosMapPartBytes = [...new Array(26).fill(2097152), 620768];
+const iosMapPartBytes = [...new Array(15).fill(2097152), 270472];
 let installPrompt = null;
 
 const serviceWorkerReady = 'serviceWorker' in navigator
@@ -134,7 +134,7 @@ const loader = new GLTFLoader()
 
 // При изменении модели увеличьте версию, чтобы браузер загрузил новые части.
 const mapUrls = isiOSDevice
-  ? Array.from({ length: 27 }, (_, index) => `/test-map-ios-ktx2.glb.part${index + 1}?v=15`)
+  ? Array.from({ length: 16 }, (_, index) => `/test-map-ios-ktx2.glb.part${index + 1}?v=16`)
   : [
       '/test-map.glb.part1?v=14',
       '/test-map.glb.part2?v=14',

@@ -28,11 +28,17 @@ for (const material of document.getRoot().listMaterials()) {
   material.setMetallicRoughnessTexture(null);
   material.setOcclusionTexture(null);
 }
+// UASTC is a fixed-rate format (~1 byte/texel before supercompression), unlike the
+// source WebP textures. Several source textures exceed 6000px on a side, which is
+// far beyond what this venue needs on screen but multiplies the KTX2 output size
+// enormously. Cap the long edge so the iOS download stays reasonable.
+const MAX_TEXTURE_DIMENSION = 2048;
 for (const texture of document.getRoot().listTextures()) {
   const image = sharp(texture.getImage());
   const metadata = await image.metadata();
-  const width = Math.ceil(metadata.width / 4) * 4;
-  const height = Math.ceil(metadata.height / 4) * 4;
+  const scale = Math.min(1, MAX_TEXTURE_DIMENSION / Math.max(metadata.width, metadata.height));
+  const width = Math.max(4, Math.round(metadata.width * scale / 4) * 4);
+  const height = Math.max(4, Math.round(metadata.height * scale / 4) * 4);
   if (width !== metadata.width || height !== metadata.height) image.resize(width, height, { fit: 'fill' });
   const png = await image.png().toBuffer();
   texture.setImage(png).setMimeType('image/png');

@@ -241,23 +241,35 @@ function formatMegabytes(bytes) {
   return (bytes / 1_000_000).toFixed(1).replace('.', ',');
 }
 
-function loadCollisionWorld() {
+async function loadCollisionWorld() {
   loading.classList.remove('hidden');
   loadingText.textContent = 'Подготовка физики…';
   progress.style.width = '100%';
   const collisionUrl = isiOSDevice ? '/collision-ios.glb?v=1' : '/collision.glb?v=14';
-  loader.load(collisionUrl, (gltf) => {
-    gltf.scene.updateMatrixWorld(true);
-    setTimeout(() => {
-      worldOctree.fromGraphNode(gltf.scene);
-      physicsReady = true;
-      ready = true;
-      resetToEntrance();
-      loading.classList.add('hidden');
-      start.classList.remove('hidden');
-      if (isTouchDevice) modeLabel.classList.remove('hidden');
-    }, 30);
-  }, undefined, (error) => showError(`Не удалось подготовить физику\n${error.message || error}`));
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const gltf = await new Promise((resolve, reject) => {
+        loader.load(collisionUrl, resolve, undefined, reject);
+      });
+      gltf.scene.updateMatrixWorld(true);
+      setTimeout(() => {
+        worldOctree.fromGraphNode(gltf.scene);
+        physicsReady = true;
+        ready = true;
+        resetToEntrance();
+        loading.classList.add('hidden');
+        start.classList.remove('hidden');
+        if (isTouchDevice) modeLabel.classList.remove('hidden');
+      }, 30);
+      return;
+    } catch (error) {
+      lastError = error;
+      loadingText.textContent = `Повтор подготовки физики (${attempt}/3)…`;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+    }
+  }
+  showError(`Не удалось подготовить физику\n${lastError?.message || lastError}`);
 }
 
 function syncColliderToCamera() {
@@ -523,6 +535,13 @@ document.addEventListener('fullscreenchange', () => {
 
 function showError(message) {
   loading.classList.add('hidden');
-  errorBox.textContent = message;
+  errorBox.textContent = '';
+  errorBox.append(document.createTextNode(message));
+  const retryButton = document.createElement('button');
+  retryButton.type = 'button';
+  retryButton.className = 'error__retry';
+  retryButton.textContent = 'Повторить';
+  retryButton.addEventListener('click', () => location.reload());
+  errorBox.append(document.createElement('br'), retryButton);
   errorBox.classList.remove('hidden');
 }

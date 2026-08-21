@@ -21,6 +21,8 @@ button { font: inherit; user-select: none; -webkit-user-select: none; touch-acti
 .mode { position: fixed; left: 18px; top: 18px; z-index: 5; padding: 9px 13px; border-radius: 9px; background: rgba(0,0,0,.52); color: #e6eef1; font-size: 13px; pointer-events: none; }
 .crosshair { position: fixed; left: 50%; top: 50%; z-index: 4; width: 5px; height: 5px; translate: -50% -50%; border: 1px solid rgba(255,255,255,.8); border-radius: 50%; pointer-events: none; }
 .error { padding: 30px; color: #ffb4b4; white-space: pre-wrap; }
+.error__retry { margin-top: 16px; padding: 12px 26px; border: 0; border-radius: 999px; color: #07120c; background: #67d9a0; cursor: pointer; font-weight: 750; white-space: normal; }
+.error__retry:hover { background: #86e8b8; }
 .mobile-controls { display: none; position: fixed; inset: 0; z-index: 6; pointer-events: none; touch-action: none; user-select: none; }
 .mobile-controls, .mobile-controls * { touch-action: none !important; -webkit-user-select: none !important; }
 .look-area { position: absolute; inset: 0 0 0 42%; pointer-events: auto; touch-action: none; }

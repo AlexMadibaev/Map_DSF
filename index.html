@@ -24,25 +24,25 @@
     <p>Вы находитесь у входа</p>
     <button id="startButton" type="button">Начать</button>
     <button id="installButton" class="install-button" type="button">Установить приложение</button>
-    <div class="controls"><span>WASD — движение</span><span>Мышь — обзор</span><span>Пробел — прыжок</span><span>C / Ctrl — сесть</span><span>Двойной пробел / F — полёт</span><span>Shift — ускорение</span><span>M — звук</span><span>R — ко входу</span></div>
+    <div class="controls"><span>WASD — движение</span><span>Мышь — обзор</span><span>Пробел — прыжок</span><span>C / Ctrl — сесть</span><span>Двойной пробел / F — полёт</span><span>Shift — ускорение</span><span>R — ко входу</span></div>
   </div>
-  <div id="hint" class="hint hidden">Нажмите, чтобы продолжить</div>
+  <div id="hint" class="hint hidden">
+    Нажмите, чтобы продолжить
+    <a class="exit-link" href="https://sxodim.tj/">Вернуться на сайт</a>
+  </div>
   <div id="mode" class="mode hidden">Режим: ходьба · F — полёт</div>
   <div class="crosshair"></div>
+  <a id="mobileExit" class="mobile-exit" href="https://sxodim.tj/">← На сайт</a>
   <div id="mobileControls" class="mobile-controls hidden">
     <div id="lookArea" class="look-area" aria-label="Обзор"></div>
     <div id="joystick" class="joystick" aria-label="Движение"><div id="joystickKnob" class="joystick__knob"></div></div>
     <div class="mobile-actions">
       <button id="mobileFullscreen" class="mobile-button mobile-button--wide" type="button">На весь экран</button>
-      <button id="mobileSound" class="mobile-button mobile-button--wide" type="button">Звук: вкл.</button>
       <button id="mobileSprint" class="mobile-button mobile-button--small" type="button">Бег</button>
       <button id="mobileCrouch" class="mobile-button mobile-button--small" type="button">Сесть</button>
-      <button id="mobileDown" class="mobile-button mobile-button--small" type="button">Вниз</button>
-      <button id="mobileFly" class="mobile-button" type="button">Полёт</button>
-      <button id="mobileJump" class="mobile-button mobile-button--primary" type="button">Прыжок</button>
+      <button id="mobileJump" class="mobile-button mobile-button--wide mobile-button--primary" type="button">Прыжок</button>
     </div>
   </div>
-  <audio id="backgroundMusic" src="/music.mp3?v=1" loop preload="auto"></audio>
   <div id="error" class="error hidden"></div>
   <script type="module" src="/src/main.js"></script>
 </body>

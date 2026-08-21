@@ -17,7 +17,10 @@ button { font: inherit; user-select: none; -webkit-user-select: none; touch-acti
 .start .install-button { margin-top: 10px; color: #e6eef1; background: rgba(255,255,255,.12); }
 .start .install-button:hover { background: rgba(255,255,255,.2); }
 .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; width: min(760px, 90vw); margin-top: 28px; color: #aebbc3; font-size: 13px; }
-.hint { position: fixed; left: 50%; bottom: 28px; z-index: 5; translate: -50%; padding: 9px 14px; border-radius: 999px; background: rgba(0,0,0,.55); color: #dce4e8; font-size: 13px; pointer-events: none; }
+.hint { position: fixed; left: 50%; bottom: 28px; z-index: 5; translate: -50%; padding: 9px 14px; border-radius: 999px; background: rgba(0,0,0,.55); color: #dce4e8; font-size: 13px; display: flex; align-items: center; gap: 12px; pointer-events: auto; }
+.hint .exit-link { pointer-events: auto; color: #67d9a0; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.hint .exit-link:hover { text-decoration: underline; }
+.mobile-exit { display: none; position: fixed; left: max(14px, env(safe-area-inset-left)); top: max(14px, env(safe-area-inset-top)); z-index: 11; padding: 9px 16px; border-radius: 999px; background: rgba(0,0,0,.55); color: #e6eef1; font-size: 13px; font-weight: 700; text-decoration: none; pointer-events: auto; }
 .mode { position: fixed; left: 18px; top: 18px; z-index: 5; padding: 9px 13px; border-radius: 9px; background: rgba(0,0,0,.52); color: #e6eef1; font-size: 13px; pointer-events: none; }
 .crosshair { position: fixed; left: 50%; top: 50%; z-index: 4; width: 5px; height: 5px; translate: -50% -50%; border: 1px solid rgba(255,255,255,.8); border-radius: 50%; pointer-events: none; }
 .error { padding: 30px; color: #ffb4b4; white-space: pre-wrap; }
@@ -38,5 +41,6 @@ button { font: inherit; user-select: none; -webkit-user-select: none; touch-acti
   .mobile-controls:not(.hidden) { display: block; }
   .controls { display: none; }
   .crosshair { opacity: .55; }
-  .mode { top: max(10px, env(safe-area-inset-top)); left: 10px; max-width: calc(100vw - 20px); font-size: 11px; }
+  .mobile-exit { display: block; }
+  .mode { top: max(52px, calc(env(safe-area-inset-top) + 46px)); left: 10px; max-width: calc(100vw - 20px); font-size: 11px; }
 }

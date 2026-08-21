@@ -21,13 +21,9 @@ const joystick = document.querySelector('#joystick');
 const joystickKnob = document.querySelector('#joystickKnob');
 const lookArea = document.querySelector('#lookArea');
 const mobileJump = document.querySelector('#mobileJump');
-const mobileFly = document.querySelector('#mobileFly');
 const mobileSprint = document.querySelector('#mobileSprint');
 const mobileCrouch = document.querySelector('#mobileCrouch');
-const mobileDown = document.querySelector('#mobileDown');
 const mobileFullscreen = document.querySelector('#mobileFullscreen');
-const mobileSound = document.querySelector('#mobileSound');
-const backgroundMusic = document.querySelector('#backgroundMusic');
 const installButton = document.querySelector('#installButton');
 const isTouchDevice = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 const isiOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -83,7 +79,6 @@ const flightMultiplier = 2.5;
 const mapDownloadBytes = 7909416;
 const desktopMapPartBytes = [2097152, 2097152, 2097152, 1617960];
 const iosMapPartBytes = [...new Array(26).fill(2097152), 620768];
-backgroundMusic.volume = 0.65;
 let installPrompt = null;
 
 const serviceWorkerReady = 'serviceWorker' in navigator
@@ -356,7 +351,7 @@ function animate(timestamp = 0) {
     clock.getDelta();
     return;
   }
-  if (isTouchDevice && timestamp - lastMobileFrame < 1000 / 30) return;
+  if (isTouchDevice && timestamp - lastMobileFrame < 1000 / 60) return;
   lastMobileFrame = timestamp;
   updatePlayer(Math.min(0.05, clock.getDelta()));
   renderer.render(scene, camera);
@@ -365,7 +360,6 @@ requestAnimationFrame(animate);
 
 function beginExperience() {
   start.classList.add('hidden');
-  backgroundMusic.play().catch(() => {});
   requestPersistentStorage();
   if (isTouchDevice) {
     mobileControls.classList.remove('hidden');
@@ -395,7 +389,7 @@ canvas.addEventListener('click', () => { if (ready && !isTouchDevice && document
 document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === canvas;
   if (locked) start.classList.add('hidden');
-  hint.classList.toggle('hidden', locked || !ready);
+  hint.classList.toggle('hidden', locked || !ready || isTouchDevice);
   modeLabel.classList.toggle('hidden', !ready);
 });
 document.addEventListener('mousemove', (event) => {
@@ -405,7 +399,6 @@ document.addEventListener('mousemove', (event) => {
 });
 document.addEventListener('keydown', (event) => {
   keys[event.code] = true;
-  if (event.code === 'KeyM' && !event.repeat) toggleSound();
   if (event.code === 'KeyR' && ready) resetToEntrance();
   if (event.code === 'KeyF' && ready && !event.repeat) {
     toggleFlight();
@@ -443,19 +436,11 @@ function updateModeLabel() {
     : 'Ходьба · C/Ctrl сесть · Space прыжок · Shift ускорение · двойной Space/F — полёт';
 }
 
-function toggleSound() {
-  backgroundMusic.muted = !backgroundMusic.muted;
-  mobileSound.textContent = backgroundMusic.muted ? 'Звук: выкл.' : 'Звук: вкл.';
-  mobileSound.classList.toggle('is-active', !backgroundMusic.muted);
-  if (!backgroundMusic.muted && backgroundMusic.paused) backgroundMusic.play().catch(() => {});
-}
-
 function toggleFlight() {
   flightMode = !flightMode;
   velocity.y = 0;
   verticalSpeed = 0;
   syncColliderToCamera();
-  mobileFly.classList.toggle('is-active', flightMode);
   updateModeLabel();
 }
 
@@ -506,7 +491,6 @@ lookArea.addEventListener('pointercancel', () => { lookPointer = null; });
 mobileJump.addEventListener('pointerdown', (event) => { event.preventDefault(); keys.Space = true; handleJumpPress(); });
 mobileJump.addEventListener('pointerup', () => { keys.Space = false; });
 mobileJump.addEventListener('pointercancel', () => { keys.Space = false; });
-mobileFly.addEventListener('click', toggleFlight);
 function bindHoldButton(button, code) {
   button.addEventListener('pointerdown', (event) => { event.preventDefault(); keys[code] = true; button.classList.add('is-active'); });
   const release = () => { keys[code] = false; button.classList.remove('is-active'); };
@@ -515,9 +499,7 @@ function bindHoldButton(button, code) {
   button.addEventListener('pointerleave', release);
 }
 bindHoldButton(mobileSprint, 'ShiftLeft');
-bindHoldButton(mobileCrouch, 'KeyC');
-bindHoldButton(mobileDown, 'ControlLeft');
-mobileSound.addEventListener('click', toggleSound);
+bindHoldButton(mobileCrouch, 'ControlLeft');
 
 mobileFullscreen.addEventListener('click', async () => {
   try {
